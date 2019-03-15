@@ -1,0 +1,8 @@
+outputs
+**/__pycache__/*
+mobilenet_ckpt
+cifar-10-batches-py
+
+*.h5
+
+.dir-locals.el
