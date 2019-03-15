@@ -5,6 +5,7 @@ from tensorflow import keras
 from dataset import DataGenerator
 from dataset.imdb_wiki import get_imdb_wiki_dataset
 from definitions import ROOT_DIR
+from utils import get_latest_checkpoint
 from utils.preresiqusites import run_preresiqusites
 
 num_classes = 2
@@ -30,8 +31,12 @@ addrs = data["addrs"]
 age_labels = data["gender_labels"]
 
 validation_size = 2500
-train_generator = DataGenerator(addrs[validation_size:], age_labels[validation_size:], batch_size, num_classes)
-val_generator = DataGenerator(addrs[:validation_size], age_labels[:validation_size], batch_size, num_classes)
+train_generator = DataGenerator(
+    addrs[validation_size:], age_labels[validation_size:], batch_size, num_classes
+)
+val_generator = DataGenerator(
+    addrs[:validation_size], age_labels[:validation_size], batch_size, num_classes
+)
 
 checkpoint_path = os.path.join(
     ROOT_DIR, "outputs", "checkpoints", app_id, "ckpt-{epoch:02d}-{val_loss:.2f}.hdf5"
@@ -40,11 +45,12 @@ if not os.path.exists(os.path.dirname(checkpoint_path)):
     os.makedirs(os.path.dirname(checkpoint_path))
 
 # Load previous checkpoints
-previous_checkpoint_path = os.path.join(
-    ROOT_DIR, "outputs", "checkpoints", app_id, "ckpt-05-4.40.hdf5"
-)
-if os.path.exists(previous_checkpoint_path):
-    model.load_weights(previous_checkpoint_path)
+# previous_checkpoint_path = os.path.join(
+#     ROOT_DIR, "outputs", "checkpoints", app_id, "ckpt-05-4.40.hdf5"
+# )
+latest_checkpoint = get_latest_checkpoint(checkpoint_path)
+if os.path.exists(latest_checkpoint):
+    model.load_weights(latest_checkpoint)
 
 opt = keras.optimizers.Adam(lr=0.001)
 model.compile(optimizer=opt, loss="categorical_crossentropy", metrics=["accuracy"])
@@ -68,7 +74,7 @@ model.fit_generator(
     epochs=20,
     verbose=1,
     validation_data=val_generator,
-    validation_steps=steps_per_epoch,
+    validation_steps=steps_per_epoch // 3,
     shuffle=True,
     use_multiprocessing=True,
     workers=6,
