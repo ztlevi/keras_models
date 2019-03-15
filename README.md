@@ -1,6 +1,6 @@
-# Tflearn Models
+# Keras Models
 
-This repo contains trainig/evaluating/testing codes for various models using tflearn.
+This repo contains trainig/evaluating/testing codes for various models using tensorflow keras.
 
 ## Basic Information
 
