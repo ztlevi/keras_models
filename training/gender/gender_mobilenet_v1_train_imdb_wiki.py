@@ -7,17 +7,13 @@ from dataset.imdb_wiki import get_imdb_wiki_dataset
 from definitions import ROOT_DIR
 from utils.preresiqusites import run_preresiqusites
 
-num_classes = 101
+num_classes = 2
 batch_size = 64
-app_id = "age_mobilenet_v1_imdb_wiki"
+app_id = "gender_mobilenet_v1_imdb_wiki"
 
-model = keras.applications.mobilenet.MobileNet(weights="imagenet", include_top=False)
 run_preresiqusites()
 
-# Freeze previous layers
-for layer in model.layers:
-    layer.trainable = False
-
+model = keras.applications.mobilenet.MobileNet(weights="imagenet", include_top=False)
 x = model.output
 x = keras.layers.GlobalAveragePooling2D()(x)
 # x = Dropout(0.5)(x)
@@ -31,7 +27,7 @@ print("========================================================================"
 
 data = get_imdb_wiki_dataset()
 addrs = data["addrs"]
-age_labels = data["age_labels"]
+age_labels = data["gender_labels"]
 
 validation_size = 2500
 train_generator = DataGenerator(addrs[validation_size:], age_labels[validation_size:], batch_size, num_classes)
@@ -51,7 +47,7 @@ if os.path.exists(previous_checkpoint_path):
     model.load_weights(previous_checkpoint_path)
 
 opt = keras.optimizers.Adam(lr=0.001)
-model.compile(optimizer=opt, loss="categorical_crossentropy", metrics=["mae", "accuracy"])
+model.compile(optimizer=opt, loss="categorical_crossentropy", metrics=["accuracy"])
 
 # Adam optimizer
 checkpoint_callback = keras.callbacks.ModelCheckpoint(
@@ -65,27 +61,11 @@ log_path = os.path.join(ROOT_DIR, "outputs", "logs", app_id)
 tensorboard_callback = keras.callbacks.TensorBoard(log_dir=log_path, batch_size=batch_size)
 
 steps_per_epoch = train_generator.n // train_generator.batch_size
-model.fit_generator(
-    generator=train_generator,
-    steps_per_epoch=steps_per_epoch,
-    epochs=5,
-    verbose=1,
-    validation_data=val_generator,
-    validation_steps=steps_per_epoch,
-    shuffle=True,
-    use_multiprocessing=True,
-    workers=6,
-    callbacks=[checkpoint_callback, tensorboard_callback],
-)
-
-# Unfreeze previous layers
-for layer in model.layers:
-    layer.trainable = True
 
 model.fit_generator(
     generator=train_generator,
     steps_per_epoch=steps_per_epoch,
-    epochs=10,
+    epochs=20,
     verbose=1,
     validation_data=val_generator,
     validation_steps=steps_per_epoch,
