@@ -9,6 +9,7 @@ from utils.preresiqusites import run_preresiqusites
 
 num_classes = 101
 batch_size = 64
+app_id = "age_mobilenet_v1_imdb_wiki"
 
 model = keras.applications.mobilenet.MobileNet(weights="imagenet", include_top=False)
 run_preresiqusites()
@@ -32,20 +33,19 @@ data = get_imdb_wiki_dataset()
 addrs = data["addrs"]
 age_labels = data["age_labels"]
 
-train_generator = DataGenerator(addrs[5000:], age_labels[5000:], 64, 101)
-val_generator = DataGenerator(addrs[:5000], age_labels[:5000], 64, 101)
+validation_size = 2500
+train_generator = DataGenerator(addrs[validation_size:], age_labels[validation_size:], 64, 101)
+val_generator = DataGenerator(addrs[:validation_size], age_labels[:validation_size], 64, 101)
 
 checkpoint_path = os.path.join(
-    ROOT_DIR,
-    "outputs/checkpoints/age_mobilenet_v1_imdb_wiki",
-    "ckpt-{epoch:02d}-{val_loss:.2f}.hdf5",
+    ROOT_DIR, "outputs", "checkpoints", app_id, "ckpt-{epoch:02d}-{val_loss:.2f}.hdf5"
 )
 if not os.path.exists(os.path.dirname(checkpoint_path)):
     os.makedirs(os.path.dirname(checkpoint_path))
 
 # Load previous checkpoints
 previous_checkpoint_path = os.path.join(
-    ROOT_DIR, "outputs/checkpoints/age_mobilenet_v1_imdb_wiki", "ckpt-02-4.19.hdf5"
+    ROOT_DIR, "outputs", "checkpoints", app_id, "ckpt-05-4.40.hdf5"
 )
 if os.path.exists(previous_checkpoint_path):
     model.load_weights(previous_checkpoint_path)
@@ -55,13 +55,13 @@ model.compile(optimizer=opt, loss="categorical_crossentropy", metrics=["mae", "a
 
 # Adam optimizer
 checkpoint_callback = keras.callbacks.ModelCheckpoint(
-    checkpoint_path, monitor="val_loss", verbose=0, save_best_only=False, period=1
+    checkpoint_path, monitor="val_loss", verbose=1, save_best_only=False, period=1
 )
 # checkpoint_callback = keras.callbacks.ModelCheckpoint(
 #     checkpoint_path, monitor="val_acc", verbose=1, save_best_only=True, mode='max', period=1
 # )
 
-log_path = os.path.join(ROOT_DIR, "outputs/logs/age_mobilenet_v1_imdb_wiki")
+log_path = os.path.join(ROOT_DIR, "outputs", "logs", app_id)
 tensorboard_callback = keras.callbacks.TensorBoard(log_dir=log_path, batch_size=batch_size)
 
 steps_per_epoch = train_generator.n // train_generator.batch_size
