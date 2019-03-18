@@ -4,6 +4,7 @@ import tensorflow as tf
 from tensorflow import keras
 
 from dataset import DataGenerator
+from dataset.Audience import get_audience_dataset
 from dataset.imdb_wiki import get_imdb_wiki_dataset
 from definitions import ROOT_DIR
 from utils import get_latest_checkpoint
@@ -21,14 +22,14 @@ run_preresiqusites()
 ################################################################################
 num_classes = 2
 batch_size = 64
-validation_size = 2500
+validation_size = 1000
 input_shape = (224, 224, 3)
 app_id = "gender_mobilenet_v1_audience"
 
 ################################################################################
 # Create dataset generator
 ################################################################################
-data = get_imdb_wiki_dataset()
+data = get_audience_dataset()
 addrs = data["addrs"]
 age_labels = data["gender_labels"]
 
