@@ -107,9 +107,6 @@ def dump_imdb_wiki_pkl(output_path):
         all_age_labels = np.append(all_age_labels, age_labels)
         all_addrs = np.append(all_addrs, addrs)
 
-    # shuffle_mask = np.arange(len(all_addrs))
-    # np.random.shuffle(shuffle_mask)
-
     # Remove invalid images, indexes of the invalid images are generated
     # during `storage_add_images`. For imdb-wiki dataset, it means the image
     # is all black
@@ -120,10 +117,16 @@ def dump_imdb_wiki_pkl(output_path):
     all_age_labels = all_age_labels[invalid_images_mask]
     all_age_labels = all_age_labels.astype(int)
 
+    # Shuffle
+    shuffle_mask = np.arange(len(all_addrs))
+    np.random.shuffle(shuffle_mask)
+    all_addrs = all_addrs[shuffle_mask]
+    all_age_labels = all_age_labels[shuffle_mask]
+    all_gender_labels = all_gender_labels[shuffle_mask]
+
     data = {"addrs": all_addrs, "gender_labels": all_gender_labels, "age_labels": all_age_labels}
     pickle.dump(data, open(output_path, "wb"))
     print(f"\nFinish dumping data!!!")
-
 
 
 def get_imdb_wiki_dataset():
