@@ -21,8 +21,9 @@ run_preresiqusites()
 ################################################################################
 num_classes = 101
 batch_size = 64
-app_id = "age_mobilenet_v1_imdb_wiki"
 validation_size = 2500
+input_shape = (224, 224, 3)
+app_id = "age_mobilenet_v1_imdb_wiki"
 
 ################################################################################
 # Create dataset generator
@@ -42,7 +43,9 @@ steps_per_epoch = train_generator.n // train_generator.batch_size
 ################################################################################
 # Create and load mobilenet
 ################################################################################
-model = keras.applications.mobilenet.MobileNet(weights="imagenet", include_top=False)
+model = keras.applications.mobilenet.MobileNet(
+    input_shape=input_shape, weights="imagenet", include_top=False
+)
 
 # Freeze previous layers
 for layer in model.layers:
