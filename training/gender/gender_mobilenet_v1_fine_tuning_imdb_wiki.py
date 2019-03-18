@@ -125,4 +125,5 @@ model.fit_generator(
     use_multiprocessing=True,
     workers=6,
     callbacks=[checkpoint_callback, tensorboard_callback],
+    initial_epoch=2
 )

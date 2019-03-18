@@ -100,7 +100,7 @@ model.compile(optimizer=opt, loss="categorical_crossentropy", metrics=["mae", "a
 model.fit_generator(
     generator=train_generator,
     steps_per_epoch=steps_per_epoch,
-    epochs=5,
+    epochs=2,
     verbose=1,
     validation_data=val_generator,
     shuffle=True,
@@ -125,4 +125,5 @@ model.fit_generator(
     use_multiprocessing=True,
     workers=6,
     callbacks=[checkpoint_callback, tensorboard_callback],
+    initial_epoch=2,
 )
