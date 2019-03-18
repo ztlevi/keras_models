@@ -113,6 +113,8 @@ model.fit_generator(
 for layer in model.layers:
     layer.trainable = True
 
+model.compile(optimizer=opt, loss="categorical_crossentropy", metrics=["mae", "accuracy"])
+
 model.fit_generator(
     generator=train_generator,
     steps_per_epoch=steps_per_epoch,
