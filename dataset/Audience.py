@@ -1,14 +1,9 @@
-import glob
 import os
 import pickle
 import random
 import sys
 
 import numpy as np
-import scipy.io
-import tables
-from tensorflow import keras
-from tensorflow.keras.utils import HDF5Matrix, to_categorical
 
 import cv2
 from definitions import AUDIENCE_DATASET_DIR
@@ -30,7 +25,6 @@ def validate_images(addrs):
             print(str(e))
             return
 
-    print(f"\nFinish converting data!!!")
     return invalid_images_mask
 
 
@@ -59,6 +53,10 @@ def dump_audience_pkl(output_path):
         age_labels += [age]
         gender_labels += [gender]
 
+    addrs = np.array(addrs)
+    age_labels = np.array(age_labels)
+    gender_labels = np.array(gender_labels)
+
     # Remove invalid images
     invalid_images_mask = validate_images(addrs)
     addrs = addrs[invalid_images_mask]
@@ -67,6 +65,7 @@ def dump_audience_pkl(output_path):
 
     data = {"addrs": addrs, "gender_labels": gender_labels, "age_labels": age_labels}
     pickle.dump(data, open(output_path, "wb"))
+    print(f"\nFinish dumping data!!!")
 
 
 def get_audience_dataset():

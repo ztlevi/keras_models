@@ -1,4 +1,3 @@
-import os
 from random import shuffle
 
 import matplotlib.pyplot as plt
@@ -8,7 +7,6 @@ from scipy.stats import norm
 from skimage.io import imread
 
 from dataset.imdb_wiki import get_imdb_wiki_dataset
-from definitions import IMDB_WIKI_DATASET_DIR
 
 data = get_imdb_wiki_dataset()
 addrs = data["addrs"]
@@ -42,7 +40,7 @@ for x in range(5):
     i_e = min([(i + 1) * batch_size, num_images])  # index of the last image in this batch
 
     # read batch images and remove training mean
-    images = [imread(os.path.join(IMDB_WIKI_DATASET_DIR, addr)) for addr in addrs[i_s:i_e, ...]]
+    images = [imread(addr) for addr in addrs[i_s:i_e, ...]]
 
     # read labels and convert to one hot encoding
     seg_gender = gender_labels[i_s:i_e]

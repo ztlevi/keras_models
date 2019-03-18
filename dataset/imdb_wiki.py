@@ -52,7 +52,6 @@ def validate_images(addrs):
             invalid_images_mask[i] = False
             continue
 
-    print(f"\nFinish converting data!!!")
     return invalid_images_mask
 
 
@@ -123,6 +122,8 @@ def dump_imdb_wiki_pkl(output_path):
 
     data = {"addrs": all_addrs, "gender_labels": all_gender_labels, "age_labels": all_age_labels}
     pickle.dump(data, open(output_path, "wb"))
+    print(f"\nFinish dumping data!!!")
+
 
 
 def get_imdb_wiki_dataset():
