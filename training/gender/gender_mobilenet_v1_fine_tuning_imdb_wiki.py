@@ -1,5 +1,6 @@
 import os
 
+import tensorflow as tf
 from tensorflow import keras
 
 from dataset import DataGenerator
@@ -7,6 +8,11 @@ from dataset.imdb_wiki import get_imdb_wiki_dataset
 from definitions import ROOT_DIR
 from utils import get_latest_checkpoint
 from utils.preresiqusites import run_preresiqusites
+
+# Set gpu usage
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.6
+keras.backend.set_session(tf.Session(config=config))
 
 run_preresiqusites()
 
@@ -89,7 +95,6 @@ model.fit_generator(
     epochs=20,
     verbose=1,
     validation_data=val_generator,
-    validation_steps=steps_per_epoch // 3,
     shuffle=True,
     use_multiprocessing=True,
     workers=6,

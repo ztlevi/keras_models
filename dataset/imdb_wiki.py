@@ -1,13 +1,13 @@
 import os
 import pickle
 import sys
+from datetime import date
 
-import cv2
 import numpy as np
 import scipy.io
 import tables
-from datetime import date
 
+import cv2
 from definitions import IMDB_WIKI_DATASET_DIR
 
 
@@ -45,7 +45,6 @@ def validate_images(addrs):
             print(str(e))
             continue
 
-
         # Remove invalid images, indexes of the invalid images are generated
         # during `storage_add_images`. For imdb-wiki dataset, it means the image
         # is all black
@@ -59,7 +58,6 @@ def validate_images(addrs):
 
 def dump_imdb_wiki_pkl(output_path):
     ids = ["imdb", "wiki"]
-    img_dtype = tables.UInt8Atom()
 
     all_gender_labels = np.array([])
     all_age_labels = np.array([])
@@ -128,10 +126,10 @@ def dump_imdb_wiki_pkl(output_path):
 
 
 def get_imdb_wiki_dataset():
-    output_path = os.path.join(IMDB_WIKI_DATASET_DIR, "data.pkl")
+    output_path = os.path.join(IMDB_WIKI_DATASET_DIR, "imdb-wiki.pkl")
     return pickle.load(open(output_path, "rb"))
 
 
 if __name__ == "__main__":
-    output_path = os.path.join(IMDB_WIKI_DATASET_DIR, "data.pkl")
+    output_path = os.path.join(IMDB_WIKI_DATASET_DIR, "imdb-wiki.pkl")
     dump_imdb_wiki_pkl(output_path)
