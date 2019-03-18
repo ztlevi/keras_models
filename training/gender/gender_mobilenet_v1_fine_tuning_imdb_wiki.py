@@ -46,6 +46,11 @@ steps_per_epoch = train_generator.n // train_generator.batch_size
 model = keras.applications.mobilenet.MobileNet(
     input_shape=input_shape, weights="imagenet", include_top=False
 )
+
+# Freeze previous layers
+for layer in model.layers:
+    layer.trainable = False
+
 x = model.output
 x = keras.layers.GlobalAveragePooling2D()(x)
 # x = Dropout(0.5)(x)
@@ -95,7 +100,23 @@ model.compile(optimizer=opt, loss="categorical_crossentropy", metrics=["accuracy
 model.fit_generator(
     generator=train_generator,
     steps_per_epoch=steps_per_epoch,
-    epochs=20,
+    epochs=2,
+    verbose=1,
+    validation_data=val_generator,
+    shuffle=True,
+    use_multiprocessing=True,
+    workers=6,
+    callbacks=[checkpoint_callback, tensorboard_callback],
+)
+
+# Unfreeze previous layers
+for layer in model.layers:
+    layer.trainable = True
+
+model.fit_generator(
+    generator=train_generator,
+    steps_per_epoch=steps_per_epoch,
+    epochs=10,
     verbose=1,
     validation_data=val_generator,
     shuffle=True,
