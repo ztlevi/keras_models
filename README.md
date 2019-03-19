@@ -14,3 +14,22 @@ This repo contains trainig/evaluating/testing codes for various models using ten
 - training: training scripts seperated into different modules, containing training from scratch and
   fine tuning scripts
 - utils: utilities scripts, e.g. prerequsites funcitons and model freezing
+
+## Known Issues
+
+1. Error when using keras to load mobilnet checkpoint. The tensorflow version I am using is 1.12.
+   You can solve this problem refering to the answer
+   [here](https://github.com/tensorflow/tensorflow/issues/22697).
+
+   **Temporary Fix**: After the `super()` call in the ReLu `init()` function in
+   `tensorflow/python/keras/layers/advanced_activations.py` (around line 310), add the following
+   lines of code:
+
+```python
+    if type(max_value) is dict:
+        max_value = max_value['value']
+    if type(negative_slope) is dict:
+        negative_slope = negative_slope['value']
+    if type(threshold) is dict:
+        threshold = threshold['value']
+```
