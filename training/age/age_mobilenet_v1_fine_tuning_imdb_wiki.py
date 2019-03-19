@@ -100,7 +100,7 @@ model.compile(optimizer=opt, loss="categorical_crossentropy", metrics=["mae", "a
 model.fit_generator(
     generator=train_generator,
     steps_per_epoch=steps_per_epoch,
-    epochs=2,
+    epochs=3,
     verbose=1,
     validation_data=val_generator,
     shuffle=True,

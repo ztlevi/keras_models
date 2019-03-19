@@ -69,8 +69,8 @@ if not os.path.exists(os.path.dirname(checkpoint_path)):
     os.makedirs(os.path.dirname(checkpoint_path))
 
 # Load previous checkpoints
-latest_checkpoint = get_latest_checkpoint(
-    os.path.join(ROOT_DIR, "outputs", "checkpoints", "gender_mobilenet_v1_imdb_wiki")
+latest_checkpoint = os.path.join(
+    ROOT_DIR, "outputs", "checkpoints", "gender_mobilenet_v1_imdb_wiki", "ckpt-08-0.48.hdf5"
 )
 if os.path.exists(latest_checkpoint):
     model.load_weights(latest_checkpoint)

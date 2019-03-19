@@ -100,7 +100,7 @@ model.compile(optimizer=opt, loss="categorical_crossentropy", metrics=["accuracy
 model.fit_generator(
     generator=train_generator,
     steps_per_epoch=steps_per_epoch,
-    epochs=2,
+    epochs=3,
     verbose=1,
     validation_data=val_generator,
     shuffle=True,
@@ -118,12 +118,12 @@ model.compile(optimizer=opt, loss="categorical_crossentropy", metrics=["accuracy
 model.fit_generator(
     generator=train_generator,
     steps_per_epoch=steps_per_epoch,
-    epochs=10,
+    epochs=20,
     verbose=1,
     validation_data=val_generator,
     shuffle=True,
     use_multiprocessing=True,
     workers=6,
     callbacks=[checkpoint_callback, tensorboard_callback],
-    initial_epoch=2
+    initial_epoch=3,
 )
