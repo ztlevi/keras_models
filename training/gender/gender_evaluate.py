@@ -1,6 +1,7 @@
 import os
 
 import h5py
+import numpy as np
 from tensorflow import keras
 
 from dataset import DataGenerator
@@ -80,8 +81,9 @@ def evaluate_fine_tuned_audience_model():
     model = keras.models.load_model(checkpoint_path)
 
     # evaluation = model.evaluate(X, keras.utils.to_categorical(Y), batch_size=128)
-    score = model.evaluate_generator(generator=val_generator)
-    print(list(zip(model.metrics_names, score)))
+    score = model.predict_generator(generator=val_generator)
+    print(np.argmax(score, axis=1))
+    # print(list(zip(model.metrics_names, score)))
 
 
 if __name__ == "__main__":

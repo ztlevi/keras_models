@@ -67,7 +67,7 @@ print("========================================================================"
 # Load checkpoint
 ################################################################################
 checkpoint_path = os.path.join(
-    ROOT_DIR, "outputs", "checkpoints", app_id, "ckpt-{epoch:02d}-{val_loss:.2f}.hdf5"
+    ROOT_DIR, "outputs", "checkpoints", app_id, "ckpt-{epoch:02d}-{val_acc:.2f}.h5"
 )
 if not os.path.exists(os.path.dirname(checkpoint_path)):
     os.makedirs(os.path.dirname(checkpoint_path))
@@ -80,12 +80,12 @@ if os.path.exists(latest_checkpoint):
 ################################################################################
 # Checkpoint and tensorboard callbacks
 ################################################################################
-checkpoint_callback = keras.callbacks.ModelCheckpoint(
-    checkpoint_path, monitor="val_loss", verbose=1, save_best_only=False, period=1
-)
 # checkpoint_callback = keras.callbacks.ModelCheckpoint(
-#     checkpoint_path, monitor="val_acc", verbose=1, save_best_only=True, mode='max', period=1
+#     checkpoint_path, monitor="val_loss", verbose=1, save_best_only=False, period=1
 # )
+checkpoint_callback = keras.callbacks.ModelCheckpoint(
+    checkpoint_path, monitor="val_acc", verbose=1, save_best_only=True, mode="max", period=1
+)
 
 log_path = os.path.join(ROOT_DIR, "outputs", "logs", app_id)
 tensorboard_callback = keras.callbacks.TensorBoard(log_dir=log_path, batch_size=batch_size)
