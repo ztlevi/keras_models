@@ -44,14 +44,14 @@ def dump_audience_pkl(output_path):
         )
         try:
             age = int(sum(list(eval(line_arr[3]))) / 2)
+            gender = 0 if line_arr[4] == "f" else 1
+
+            addrs += [addr]
+            age_labels += [age]
+            gender_labels += [gender]
         except TypeError as e:
             # resolve None age
-            age = 1
-        gender = 0 if line_arr[4] == "f" else 1
-
-        addrs += [addr]
-        age_labels += [age]
-        gender_labels += [gender]
+            continue
 
     addrs = np.array(addrs)
     age_labels = np.array(age_labels)

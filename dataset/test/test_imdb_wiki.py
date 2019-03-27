@@ -52,7 +52,8 @@ for x in range(5):
         plt.xticks([])
         plt.yticks([])
         plt.grid(False)
-        plt.imshow(images[j], cmap=plt.cm.binary)
-        plt.xlabel(class_names[seg_gender[j]] + "_" + str(seg_age[j]))
+        if j < len(images):
+            plt.imshow(images[j], cmap=plt.cm.binary)
+            plt.xlabel(class_names[seg_gender[j]] + "_" + str(seg_age[j]))
 
 plt.show()

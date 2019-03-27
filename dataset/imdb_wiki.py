@@ -5,7 +5,6 @@ from datetime import date
 
 import numpy as np
 import scipy.io
-import tables
 
 import cv2
 from definitions import IMDB_WIKI_DATASET_DIR
