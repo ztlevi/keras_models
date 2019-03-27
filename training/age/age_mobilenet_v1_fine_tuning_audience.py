@@ -2,10 +2,12 @@ import os
 
 import tensorflow as tf
 from tensorflow import keras
+import numpy as np
 
 from dataset import DataGenerator
 from dataset.Audience import get_audience_dataset
 from definitions import ROOT_DIR
+from training.age import mae_pred
 from utils import get_latest_checkpoint
 from utils.preresiqusites import run_preresiqusites
 
@@ -30,7 +32,7 @@ app_id = "age_mobilenet_v1_audience"
 ################################################################################
 data = get_audience_dataset()
 addrs = data["addrs"]
-age_labels = data["gender_labels"]
+age_labels = data["age_labels"]
 
 train_generator = DataGenerator(
     addrs[validation_size:], age_labels[validation_size:], batch_size, num_classes
@@ -57,19 +59,16 @@ for i, layer in enumerate(model.layers):
     print(i, layer.name)
 print("========================================================================")
 
-
 ################################################################################
 # Load checkpoint
 ################################################################################
-checkpoint_path = os.path.join(
-    ROOT_DIR, "outputs", "checkpoints", app_id, "ckpt-{epoch:02d}-{val_loss:.2f}.hdf5"
-)
+checkpoint_path = os.path.join(ROOT_DIR, "outputs", "checkpoints", app_id, "ckpt.h5")
 if not os.path.exists(os.path.dirname(checkpoint_path)):
     os.makedirs(os.path.dirname(checkpoint_path))
 
 # Load previous checkpoints
-latest_checkpoint = os.path.join(
-    ROOT_DIR, "outputs", "checkpoints", "gender_mobilenet_v1_imdb_wiki"
+latest_checkpoint = get_latest_checkpoint(
+    os.path.join(ROOT_DIR, "outputs", "checkpoints", "age_mobilenet_v1_imdb_wiki")
 )
 if os.path.exists(latest_checkpoint):
     model.load_weights(latest_checkpoint)
@@ -77,22 +76,26 @@ if os.path.exists(latest_checkpoint):
 ################################################################################
 # Checkpoint and tensorboard callbacks
 ################################################################################
-checkpoint_callback = keras.callbacks.ModelCheckpoint(
-    checkpoint_path, monitor="val_loss", verbose=1, save_best_only=False, period=1
-)
 # checkpoint_callback = keras.callbacks.ModelCheckpoint(
-#     checkpoint_path, monitor="val_acc", verbose=1, save_best_only=True, mode='max', period=1
+#     checkpoint_path, monitor="val_loss", verbose=1, save_best_only=False, period=1
 # )
+csv_logger = keras.callbacks.CSVLogger(
+    os.path.join(ROOT_DIR, "outputs", "logs", app_id, "log.csv"), append=True, separator=","
+)
+checkpoint_callback = keras.callbacks.ModelCheckpoint(
+    checkpoint_path, monitor="val_mae_pred", verbose=1, save_best_only=True, mode="min", period=1
+)
 
 log_path = os.path.join(ROOT_DIR, "outputs", "logs", app_id)
 tensorboard_callback = keras.callbacks.TensorBoard(log_dir=log_path, batch_size=batch_size)
+
 
 ################################################################################
 # Train
 ################################################################################
 # Adam optimizer
 opt = keras.optimizers.Adam(lr=0.001)
-model.compile(optimizer=opt, loss="categorical_crossentropy", metrics=["mae", "accuracy"])
+model.compile(optimizer=opt, loss="categorical_crossentropy", metrics=[mae_pred, "accuracy"])
 
 model.fit_generator(
     generator=train_generator,
@@ -103,5 +106,5 @@ model.fit_generator(
     shuffle=True,
     use_multiprocessing=True,
     workers=6,
-    callbacks=[checkpoint_callback, tensorboard_callback],
+    callbacks=[checkpoint_callback, tensorboard_callback, csv_logger],
 )

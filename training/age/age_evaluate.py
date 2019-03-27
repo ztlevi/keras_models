@@ -1,17 +1,19 @@
 import os
-from math import ceil
 from random import shuffle
 
+import cv2
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
-import tensorflow as tf
-import tflearn
+from math import ceil
+from skimage.io import imread
 from tensorflow import keras
 
-import net
+from dataset import DataGenerator
+from dataset.Audience import get_audience_dataset
+from dataset.imdb_wiki import get_imdb_wiki_dataset
 from definitions import ROOT_DIR
-from net import mobilenet_v1
+from training.age import mae_pred
 
 
 def evaluate_tut_model():
@@ -35,64 +37,102 @@ def evaluate_tut_model():
     print(evaluation)
 
 
-def evaluate_age_mobilenet_v1_train_affectnet_model():
-    dataset_dir = "/media/ztlevi/HDD/IMDB-WIKI"
+def evaluate_age_mobilenet_v1_imdb_wiki():
+    validation_size = 1000
+    data = get_imdb_wiki_dataset()
+    addrs = data["addrs"][:validation_size]
+    age_labels = data["age_labels"][:validation_size]
+    gender_labels = data["gender_labels"][:validation_size]
 
-    h5f = h5py.File(os.path.join(dataset_dir, "imdb-wiki.h5"), "r")
-    X = h5f["img"][:4000]
-    Y = h5f["age"][:4000]
-    Y = Y / 100
-
-    img_prep = tflearn.ImagePreprocessing()
-    img_prep.add_image_normalization()
-    # Building Mobilenet
-    net, layers = mobilenet_v1.build_mobilenet_v1(1, (224, 224), img_prep)
-    net = tflearn.single_unit(net)
-
-    regression = tflearn.regression(
-        net, optimizer="adam", loss="mean_square", metric="R2", learning_rate=0.001
-    )
-
-    # Training
-    model = tflearn.DNN(
-        regression,
-        tensorboard_verbose=0,
-        tensorboard_dir=os.path.join(ROOT_DIR, "outputs/logs"),
-        checkpoint_path=os.path.join(
-            ROOT_DIR, "outputs/checkpoints/age_mobilenet_v1_imdb_wiki/ckpt"
-        ),
-    )
-
-    # model.load(os.path.join(ROOT_DIR, "outputs/checkpoints/age_mobilenet_v1_imdb_wiki/ckpt-2500"))
-    model.load("/home/ztlevi/Developer/tflearn-models/outputs/checkpoints/age_mobilenet_v1_audience/ckpt-4472")
-
-    # print("Evaluate unbalanced test set...")
-    # evaluation = model.evaluate(X, Y)
-    # print(evaluation)
-
-    Y_pred_1 = model.predict([X[0]])
-    Y_pred_2 = model.predict([X[1000]])
-
-    num_images = X.shape[0]
-
+    num_classes = 101
     batch_size = 64
+    checkpoint_path = os.path.join(
+        ROOT_DIR, "outputs", "checkpoints", "age_mobilenet_v1_imdb_wiki", "ckpt-10-3.64.h5"
+    )
 
+    # Building Mobilenet
+
+    val_generator = DataGenerator(
+        addrs[:validation_size], age_labels[:validation_size], batch_size, num_classes
+    )
+    # steps_per_epoch = val_generator.n // val_generator.batch_size
+
+    model = keras.models.load_model(checkpoint_path)
+
+    score = model.predict_generator(generator=val_generator)
+    y_pred = np.argmax(score, axis=1)
+    mae = np.sum(np.abs(age_labels - y_pred)) / len(age_labels)
+    print("mae: {}".format(mae))
+
+    # print(list(zip(model.metrics_names, score)))
+    plot(validation_size, batch_size, addrs, gender_labels, age_labels, y_pred)
+
+
+def evaluate_age_mobilenet_v1_audience():
+    validation_size = 1000
+    data = get_audience_dataset()
+    addrs = data["addrs"][:validation_size]
+    age_labels = data["age_labels"][:validation_size]
+    gender_labels = data["gender_labels"][:validation_size]
+
+    num_classes = 101
+    batch_size = 64
+    checkpoint_path = os.path.join(
+        ROOT_DIR, "outputs", "checkpoints", "age_mobilenet_v1_audience", "ckpt.h5"
+    )
+
+    # Building Mobilenet
+
+    val_generator = DataGenerator(addrs, age_labels, batch_size, num_classes)
+    # steps_per_epoch = val_generator.n // val_generator.batch_size
+
+    model = keras.models.load_model(checkpoint_path, custom_objects={'mae_pred': mae_pred})
+
+    # TESTING
+    for i in range(200, 800, 10):
+        addr = addrs[i]
+        print(addr)
+        img = cv2.imread(addr)
+        cv2.imshow("img", img)
+        norm_img = cv2.normalize(img, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+        cv2.waitKey(1)
+        X = np.expand_dims(cv2.resize(norm_img, (224, 224)), axis=0)
+        y_pred = model.predict(X)
+        Y = np.argmax(y_pred)
+        print(Y)
+
+    # evaluation = model.evaluate(X, keras.utils.to_categorical(Y), batch_size=128)
+    score = model.predict_generator(generator=val_generator)
+    y_pred = np.argmax(score, axis=1)
+    mae = np.sum(np.abs(age_labels - y_pred)) / len(age_labels)
+    print("mae: {}".format(mae))
+
+    acc = np.sum(y_pred == age_labels) / len(age_labels)
+    print("acc: {}".format(acc))
+
+    plot(validation_size, batch_size, addrs, gender_labels, age_labels, y_pred)
+
+
+def plot(num_images, batch_size, addrs, gender_labels, age_labels, y_pred):
+    class_names = ["female", "male"]
     # create list of batches to shuffle the data
     batches_list = list(range(int(ceil(float(num_images) / batch_size))))
     shuffle(batches_list)
-    # loop over batches
+
     for x in range(5):
+
         i = batches_list[x]
 
         i_s = i * batch_size  # index of the first image in this batch
         i_e = min([(i + 1) * batch_size, num_images])  # index of the last image in this batch
 
         # read batch images and remove training mean
-        images = X[i_s:i_e, ...]
+        images = [imread(addr) for addr in addrs[i_s:i_e, ...]]
 
         # read labels and convert to one hot encoding
-        seg_labels = Y_pred[i_s:i_e]
-        seg_orginal_labels = Y[i_s:i_e]
+        seg_gender = gender_labels[i_s:i_e]
+        seg_age = age_labels[i_s:i_e]
+        seg_pred = y_pred[i_s:i_e]
 
         plt.figure(figsize=(10, 10))
         for j in range(25):
@@ -100,13 +140,20 @@ def evaluate_age_mobilenet_v1_train_affectnet_model():
             plt.xticks([])
             plt.yticks([])
             plt.grid(False)
-            plt.imshow(images[j], cmap=plt.cm.binary)
-            plt.xlabel(seg_labels[j] + seg_orginal_labels[j])
+            if j < len(images):
+                plt.imshow(images[j], cmap=plt.cm.binary)
+                plt.xlabel(
+                    class_names[seg_gender[j]]
+                    + "_age_"
+                    + str(seg_age[j])
+                    + "_pred_"
+                    + str(seg_pred[j])
+                )
 
     plt.show()
 
 
 if __name__ == "__main__":
-    evaluate_tut_model()
-
-    # evaluate_age_mobilenet_v1_train_affectnet_model()
+    # evaluate_tut_model()
+    # evaluate_age_mobilenet_v1_imdb_wiki()
+    evaluate_age_mobilenet_v1_audience()
