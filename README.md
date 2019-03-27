@@ -2,6 +2,15 @@
 
 This repo contains trainig/evaluating/testing codes for various models using tensorflow keras.
 
+## Installation
+
+```python
+conda create -n tf python=3.6
+source activate tf
+conda install -c conda-forge tensorflow-gpu=1.12.0 scikit-image
+conda install -c menpo opencv3
+```
+
 ## Basic Information
 
 - Developer: Ting Zhou
@@ -17,7 +26,9 @@ This repo contains trainig/evaluating/testing codes for various models using ten
 
 ## Known Issues
 
-1. Error when using keras to load mobilnet checkpoint. The tensorflow version I am using is 1.12.
+1. `TypeError: '<' not supported between instances of 'dict' and 'float'`:
+
+   Error when using keras to load mobilnet checkpoint. The tensorflow version I am using is 1.12.
    You can solve this problem refering to the answer
    [here](https://github.com/tensorflow/tensorflow/issues/22697).
 
