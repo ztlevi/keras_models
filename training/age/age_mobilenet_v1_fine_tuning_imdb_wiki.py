@@ -2,13 +2,19 @@ import os
 
 import tensorflow as tf
 from tensorflow import keras
+from tensorflow.keras import backend as K
 
-from dataset import DataGenerator
 from dataset.imdb_wiki import get_imdb_wiki_dataset
 from definitions import ROOT_DIR
-from training.age import mae_pred
+from training import step_decay
+from training.age import (AgeDataGenerator, Linear_1_bias, mae_pred,
+                          task_importance_weights)
 from utils import get_latest_checkpoint
 from utils.preresiqusites import run_preresiqusites
+
+# tf.enable_eager_execution()
+num_gpus = 4
+os.environ["CUDA_VISIBLE_DEVICES"] = "4,5,6,7"
 
 # Set gpu usage
 config = tf.ConfigProto()
@@ -33,10 +39,13 @@ data = get_imdb_wiki_dataset()
 addrs = data["addrs"]
 age_labels = data["age_labels"]
 
-train_generator = DataGenerator(
+imp = task_importance_weights(age_labels)
+imp = imp[0 : num_classes - 1]
+
+train_generator = AgeDataGenerator(
     addrs[validation_size:], age_labels[validation_size:], batch_size, num_classes
 )
-val_generator = DataGenerator(
+val_generator = AgeDataGenerator(
     addrs[:validation_size], age_labels[:validation_size], batch_size, num_classes
 )
 steps_per_epoch = train_generator.n // train_generator.batch_size
@@ -54,15 +63,15 @@ for layer in model.layers:
 
 x = model.output
 x = keras.layers.GlobalAveragePooling2D()(x)
-# x = Dropout(0.5)(x)
-preds = keras.layers.Dense(num_classes, activation="softmax")(x)
+x = keras.layers.Dense(1, use_bias=False)(x)
+preds = Linear_1_bias(num_classes)(x)
+
 model = keras.models.Model(inputs=model.input, outputs=preds)
 
 print("=============================== MODEL DESC =============================")
 for i, layer in enumerate(model.layers):
     print(i, layer.name)
 print("========================================================================")
-
 
 ################################################################################
 # Load checkpoint
@@ -79,9 +88,6 @@ if os.path.exists(latest_checkpoint):
 ################################################################################
 # Checkpoint and tensorboard callbacks
 ################################################################################
-# checkpoint_callback = keras.callbacks.ModelCheckpoint(
-#     checkpoint_path, monitor="val_loss", verbose=1, save_best_only=False, period=1
-# )
 checkpoint_callback = keras.callbacks.ModelCheckpoint(
     checkpoint_path, monitor="val_mae_pred", verbose=1, save_best_only=True, mode="min", period=1
 )
@@ -89,12 +95,32 @@ checkpoint_callback = keras.callbacks.ModelCheckpoint(
 log_path = os.path.join(ROOT_DIR, "outputs", "logs", app_id)
 tensorboard_callback = keras.callbacks.TensorBoard(log_dir=log_path, batch_size=batch_size)
 
+# lrate = keras.callbacks.LearningRateScheduler(step_decay)
+
+callback_list = [checkpoint_callback, tensorboard_callback]
+
 ################################################################################
 # Train
 ################################################################################
 # Adam optimizer
+epochs = 50
 opt = keras.optimizers.Adam(lr=0.001)
-model.compile(optimizer=opt, loss="categorical_crossentropy", metrics=[mae_pred, "accuracy"])
+
+
+def coral_loss(imp):
+    def loss(levels, logits):
+        val = -K.sum(
+            (K.log(K.sigmoid(logits)) * levels + (K.log(K.sigmoid(logits)) - logits) * (1 - levels))
+            * tf.convert_to_tensor(imp, dtype=tf.float32),
+            axis=1,
+        )
+        return K.mean(val)
+
+    return loss
+
+
+coral_loss = coral_loss(imp)
+model.compile(optimizer=opt, loss=coral_loss, metrics=[mae_pred])
 
 model.fit_generator(
     generator=train_generator,
@@ -105,7 +131,7 @@ model.fit_generator(
     shuffle=True,
     use_multiprocessing=True,
     workers=6,
-    callbacks=[checkpoint_callback, tensorboard_callback],
+    callbacks=callback_list,
 )
 
 # Unfreeze previous layers
@@ -117,17 +143,20 @@ latest_checkpoint = get_latest_checkpoint(os.path.dirname(checkpoint_path))
 if os.path.exists(latest_checkpoint):
     model.load_weights(latest_checkpoint)
 
-model.compile(optimizer=opt, loss="categorical_crossentropy", metrics=[mae_pred, "accuracy"])
+model.compile(optimizer=opt, loss=coral_loss, metrics=[mae_pred])
 
 model.fit_generator(
     generator=train_generator,
     steps_per_epoch=steps_per_epoch,
-    epochs=20,
+    epochs=epochs,
     verbose=1,
     validation_data=val_generator,
     shuffle=True,
     use_multiprocessing=True,
     workers=6,
-    callbacks=[checkpoint_callback, tensorboard_callback],
-    initial_epoch=3,
+    callbacks=callback_list,
+    initial_epoch=5,
 )
+
+last_checkpoint_path = os.path.join(ROOT_DIR, "outputs", "checkpoints", app_id, "last-ckpt.h5")
+model.save(last_checkpoint_path)
