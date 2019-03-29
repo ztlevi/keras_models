@@ -6,20 +6,20 @@ from tensorflow.keras import backend as K
 
 from dataset.imdb_wiki import get_imdb_wiki_dataset
 from definitions import ROOT_DIR
-from training import step_decay
 from training.age import (AgeDataGenerator, Linear_1_bias, mae_pred,
                           task_importance_weights)
 from utils import get_latest_checkpoint
 from utils.preresiqusites import run_preresiqusites
 
 # tf.enable_eager_execution()
-num_gpus = 4
-os.environ["CUDA_VISIBLE_DEVICES"] = "4,5,6,7"
+GPUS = "4,5,6,7"
+os.environ["CUDA_VISIBLE_DEVICES"] = GPUS
+num_gpus = len(GPUS.split(','))
 
 # Set gpu usage
-config = tf.ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction = 0.6
-keras.backend.set_session(tf.Session(config=config))
+# config = tf.ConfigProto()
+# config.gpu_options.per_process_gpu_memory_fraction = 0.6
+# keras.backend.set_session(tf.Session(config=config))
 
 run_preresiqusites()
 
@@ -40,7 +40,7 @@ addrs = data["addrs"]
 age_labels = data["age_labels"]
 
 imp = task_importance_weights(age_labels)
-imp = imp[0 : num_classes - 1]
+imp = imp[0: num_classes - 1]
 
 train_generator = AgeDataGenerator(
     addrs[validation_size:], age_labels[validation_size:], batch_size, num_classes
@@ -67,6 +67,8 @@ x = keras.layers.Dense(1, use_bias=False)(x)
 preds = Linear_1_bias(num_classes)(x)
 
 model = keras.models.Model(inputs=model.input, outputs=preds)
+
+model = keras.utils.multi_gpu_model(model, gpus=num_gpus, cpu_merge=True)
 
 print("=============================== MODEL DESC =============================")
 for i, layer in enumerate(model.layers):
