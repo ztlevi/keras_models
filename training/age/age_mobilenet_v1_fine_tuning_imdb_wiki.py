@@ -1,20 +1,18 @@
 import os
 
-import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras import backend as K
 
 from dataset.imdb_wiki import get_imdb_wiki_dataset
 from definitions import ROOT_DIR
-from training.age import (AgeDataGenerator, Linear_1_bias, mae_pred,
-                          task_importance_weights)
-from utils import get_latest_checkpoint
+from training.age import (AgeDataGenerator, Linear_1_bias, coral_loss,
+                          mae_pred, task_importance_weights)
 from utils.preresiqusites import run_preresiqusites
 
 # tf.enable_eager_execution()
-GPUS = "4,5,6,7"
+# GPUS = "4,5,6,7"
+GPUS = "0"
 os.environ["CUDA_VISIBLE_DEVICES"] = GPUS
-num_gpus = len(GPUS.split(','))
+num_gpus = len(GPUS.split(","))
 
 # Set gpu usage
 # config = tf.ConfigProto()
@@ -27,7 +25,7 @@ run_preresiqusites()
 # Custom variables
 ################################################################################
 num_classes = 101
-batch_size = 64
+batch_size = 64 * num_gpus
 validation_size = 2500
 input_shape = (224, 224, 3)
 app_id = "age_mobilenet_v1_imdb_wiki"
@@ -39,8 +37,7 @@ data = get_imdb_wiki_dataset()
 addrs = data["addrs"]
 age_labels = data["age_labels"]
 
-imp = task_importance_weights(age_labels)
-imp = imp[0: num_classes - 1]
+imp = task_importance_weights(age_labels, num_classes)
 
 train_generator = AgeDataGenerator(
     addrs[validation_size:], age_labels[validation_size:], batch_size, num_classes
@@ -64,16 +61,17 @@ for layer in model.layers:
 x = model.output
 x = keras.layers.GlobalAveragePooling2D()(x)
 x = keras.layers.Dense(1, use_bias=False)(x)
-preds = Linear_1_bias(num_classes)(x)
+x = Linear_1_bias(num_classes)(x)
 
-model = keras.models.Model(inputs=model.input, outputs=preds)
-
-model = keras.utils.multi_gpu_model(model, gpus=num_gpus, cpu_merge=True)
+model = keras.models.Model(inputs=model.input, outputs=x)
 
 print("=============================== MODEL DESC =============================")
 for i, layer in enumerate(model.layers):
     print(i, layer.name)
 print("========================================================================")
+
+if num_gpus > 1:
+    model = keras.utils.multi_gpu_model(model, gpus=num_gpus, cpu_merge=True)
 
 ################################################################################
 # Load checkpoint
@@ -83,13 +81,15 @@ if not os.path.exists(os.path.dirname(checkpoint_path)):
     os.makedirs(os.path.dirname(checkpoint_path))
 
 # Load previous checkpoints
-latest_checkpoint = get_latest_checkpoint(os.path.dirname(checkpoint_path))
-if os.path.exists(latest_checkpoint):
-    model.load_weights(latest_checkpoint)
+if os.path.exists(checkpoint_path):
+    model.load_weights(checkpoint_path)
 
 ################################################################################
 # Checkpoint and tensorboard callbacks
 ################################################################################
+csv_logger = keras.callbacks.CSVLogger(
+    os.path.join(ROOT_DIR, "outputs", "logs", app_id, "log.csv"), append=True, separator=","
+)
 checkpoint_callback = keras.callbacks.ModelCheckpoint(
     checkpoint_path, monitor="val_mae_pred", verbose=1, save_best_only=True, mode="min", period=1
 )
@@ -97,37 +97,24 @@ checkpoint_callback = keras.callbacks.ModelCheckpoint(
 log_path = os.path.join(ROOT_DIR, "outputs", "logs", app_id)
 tensorboard_callback = keras.callbacks.TensorBoard(log_dir=log_path, batch_size=batch_size)
 
-# lrate = keras.callbacks.LearningRateScheduler(step_decay)
-
-callback_list = [checkpoint_callback, tensorboard_callback]
+callback_list = [checkpoint_callback, tensorboard_callback, csv_logger]
 
 ################################################################################
 # Train
 ################################################################################
 # Adam optimizer
-epochs = 50
 opt = keras.optimizers.Adam(lr=0.001)
-
-
-def coral_loss(imp):
-    def loss(levels, logits):
-        val = -K.sum(
-            (K.log(K.sigmoid(logits)) * levels + (K.log(K.sigmoid(logits)) - logits) * (1 - levels))
-            * tf.convert_to_tensor(imp, dtype=tf.float32),
-            axis=1,
-        )
-        return K.mean(val)
-
-    return loss
-
 
 coral_loss = coral_loss(imp)
 model.compile(optimizer=opt, loss=coral_loss, metrics=[mae_pred])
 
+sess_1_epochs = 3
+sess_2_epochs = 15
+
 model.fit_generator(
     generator=train_generator,
     steps_per_epoch=steps_per_epoch,
-    epochs=5,
+    epochs=sess_1_epochs,
     verbose=1,
     validation_data=val_generator,
     shuffle=True,
@@ -141,23 +128,22 @@ for layer in model.layers:
     layer.trainable = True
 
 # Load last best checkpoint
-latest_checkpoint = get_latest_checkpoint(os.path.dirname(checkpoint_path))
-if os.path.exists(latest_checkpoint):
-    model.load_weights(latest_checkpoint)
+if os.path.exists(checkpoint_path):
+    model.load_weights(checkpoint_path)
 
 model.compile(optimizer=opt, loss=coral_loss, metrics=[mae_pred])
 
 model.fit_generator(
     generator=train_generator,
     steps_per_epoch=steps_per_epoch,
-    epochs=epochs,
+    epochs=sess_2_epochs,
     verbose=1,
     validation_data=val_generator,
     shuffle=True,
     use_multiprocessing=True,
     workers=6,
     callbacks=callback_list,
-    initial_epoch=5,
+    initial_epoch=sess_1_epochs,
 )
 
 last_checkpoint_path = os.path.join(ROOT_DIR, "outputs", "checkpoints", app_id, "last-ckpt.h5")

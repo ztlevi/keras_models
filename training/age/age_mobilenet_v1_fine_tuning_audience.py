@@ -1,14 +1,13 @@
 import os
 
+import numpy as np
 import tensorflow as tf
 from tensorflow import keras
-import numpy as np
 
 from dataset import DataGenerator
 from dataset.Audience import get_audience_dataset
 from definitions import ROOT_DIR
 from training.age import mae_pred
-from utils import get_latest_checkpoint
 from utils.preresiqusites import run_preresiqusites
 
 # Set gpu usage
@@ -67,11 +66,8 @@ if not os.path.exists(os.path.dirname(checkpoint_path)):
     os.makedirs(os.path.dirname(checkpoint_path))
 
 # Load previous checkpoints
-latest_checkpoint = get_latest_checkpoint(
-    os.path.join(ROOT_DIR, "outputs", "checkpoints", "age_mobilenet_v1_imdb_wiki")
-)
-if os.path.exists(latest_checkpoint):
-    model.load_weights(latest_checkpoint)
+if os.path.exists(checkpoint_path):
+    model.load_weights(checkpoint_path)
 
 ################################################################################
 # Checkpoint and tensorboard callbacks

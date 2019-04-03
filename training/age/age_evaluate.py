@@ -13,6 +13,8 @@ from dataset import DataGenerator
 from dataset.Audience import get_audience_dataset
 from dataset.imdb_wiki import get_imdb_wiki_dataset
 from definitions import ROOT_DIR
+from training.age import Linear_1_bias, task_importance_weights
+from training.age import coral_loss
 from training.age import mae_pred
 
 
@@ -46,8 +48,11 @@ def evaluate_age_mobilenet_v1_imdb_wiki():
 
     num_classes = 101
     batch_size = 64
+
+    imp = task_importance_weights(age_labels, num_classes)
+
     checkpoint_path = os.path.join(
-        ROOT_DIR, "outputs", "checkpoints", "age_mobilenet_v1_imdb_wiki", "ckpt-10-3.64.h5"
+        ROOT_DIR, "outputs", "checkpoints", "age_mobilenet_v1_imdb_wiki", "ckpt.h5"
     )
 
     # Building Mobilenet
@@ -55,13 +60,20 @@ def evaluate_age_mobilenet_v1_imdb_wiki():
     val_generator = DataGenerator(
         addrs[:validation_size], age_labels[:validation_size], batch_size, num_classes
     )
+
     # steps_per_epoch = val_generator.n // val_generator.batch_size
 
-    model = keras.models.load_model(checkpoint_path)
+    def relu6(x):
+        return keras.backend.relu(x, max_value=6)
 
-    score = model.predict_generator(generator=val_generator)
-    y_pred = np.argmax(score, axis=1)
-    mae = np.sum(np.abs(age_labels - y_pred)) / len(age_labels)
+    with keras.utils.CustomObjectScope({'relu6': relu6, 'Linear_1_bias': Linear_1_bias}):
+        loss = coral_loss(imp)
+        model = keras.models.load_model(checkpoint_path, custom_objects={'loss': loss, 'mae_pred': mae_pred})
+
+    pred = model.predict_generator(generator=val_generator)
+    pred = pred > 0.5
+    y_pred = np.sum(pred, axis=1)
+    mae = np.mean(np.abs(age_labels - y_pred))
     print("mae: {}".format(mae))
 
     # print(list(zip(model.metrics_names, score)))
@@ -104,7 +116,7 @@ def evaluate_age_mobilenet_v1_audience():
     # evaluation = model.evaluate(X, keras.utils.to_categorical(Y), batch_size=128)
     score = model.predict_generator(generator=val_generator)
     y_pred = np.argmax(score, axis=1)
-    mae = np.sum(np.abs(age_labels - y_pred)) / len(age_labels)
+    mae = np.mean(np.abs(age_labels - y_pred))
     print("mae: {}".format(mae))
 
     acc = np.sum(y_pred == age_labels) / len(age_labels)
@@ -155,5 +167,5 @@ def plot(num_images, batch_size, addrs, gender_labels, age_labels, y_pred):
 
 if __name__ == "__main__":
     # evaluate_tut_model()
-    # evaluate_age_mobilenet_v1_imdb_wiki()
-    evaluate_age_mobilenet_v1_audience()
+    evaluate_age_mobilenet_v1_imdb_wiki()
+    # evaluate_age_mobilenet_v1_audience()

@@ -2,24 +2,26 @@ import cv2
 import numpy as np
 from tensorflow import keras
 import tensorflow as tf
+from tensorflow.keras import backend as K
 
 
 # MAE
 def mae_pred(y_true, y_pred):
+    y_true = tf.sigmoid(y_true)
     levels = tf.cast(y_true > 0.5, tf.int8)
     true_labels = tf.cast(keras.backend.sum(levels, axis=1), tf.float32)
 
     predict_levels = tf.cast(y_pred > 0.5, tf.int8)
     predicted_labels = tf.cast(keras.backend.sum(predict_levels, axis=1), tf.float32)
 
-    return keras.backend.sum(keras.backend.abs(true_labels - predicted_labels)) / 64
+    return K.mean(K.abs(true_labels - predicted_labels))
 
 
-def task_importance_weights(label_array):
+def task_importance_weights(label_array, num_classes):
     uniq = np.unique(label_array)
     num_examples = label_array.shape[0]
 
-    m = np.zeros(uniq.shape[0])
+    m = np.zeros(num_classes-1)
 
     for i, t in enumerate(np.arange(np.min(uniq), np.max(uniq))):
         m_k = np.max([label_array[label_array > t].shape[0], num_examples - label_array[label_array > t].shape[0]])
@@ -61,13 +63,36 @@ class Linear_1_bias(keras.layers.Layer):
         super(Linear_1_bias, self).__init__(**kwargs)
 
     def build(self, input_shape):
+        self.linear_1_bais = self.add_weight(name="Liner_1_Bais",
+                                             shape=(self.num_classes - 1),
+                                             initializer="zeros",
+                                             trainable=True)
+        # keras.backend.zeros(self.num_classes - 1)
         super(Linear_1_bias, self).build(input_shape)  # Be sure to call this at the end
 
     def call(self, x):
-        x = x + keras.backend.zeros(self.num_classes - 1)
-        x = keras.backend.sigmoid(x)
+        # return keras.backend.bias_add(x, self.linear_1_bais)
+        x = x + self.linear_1_bais
+        # probas = keras.backend.sigmoid(x)
         return x
-        # return K.dot(x, self.kernel)
+
+    def get_config(self):
+        config = {
+            'num_classes': self.num_classes,
+        }
+        base_config = super(Linear_1_bias, self).get_config()
+        return dict(list(base_config.items()) + list(config.items()))
 
     def compute_output_shape(self, input_shape):
         return (input_shape[0],)
+
+def coral_loss(imp):
+    def loss(levels, logits):
+        val = -K.sum(
+            (K.log(K.sigmoid(logits)) * levels + (K.log(K.sigmoid(logits)) - logits) * (1 - levels))
+            * tf.convert_to_tensor(imp, dtype=tf.float32),
+            axis=1,
+            )
+        return K.mean(val)
+
+    return loss

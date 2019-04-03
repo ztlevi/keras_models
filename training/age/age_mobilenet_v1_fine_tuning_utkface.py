@@ -1,21 +1,18 @@
 import os
 
-import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 
-from dataset import DataGenerator
-from dataset.Audience import get_audience_dataset
 from dataset.UTKFace import get_utkface_dataset
 from definitions import ROOT_DIR
-from training.age import mae_pred
-from utils import get_latest_checkpoint
+from training.age import (AgeDataGenerator, Linear_1_bias, coral_loss,
+                          mae_pred, task_importance_weights)
 from utils.preresiqusites import run_preresiqusites
 
-# Set gpu usage
-config = tf.ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction = 0.6
-keras.backend.set_session(tf.Session(config=config))
+# GPUS = "4,5,6,7"
+GPUS = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = GPUS
+num_gpus = len(GPUS.split(","))
 
 run_preresiqusites()
 
@@ -23,7 +20,7 @@ run_preresiqusites()
 # Custom variables
 ################################################################################
 num_classes = 101
-batch_size = 64
+batch_size = 64 * num_gpus
 validation_size = 1000
 input_shape = (224, 224, 3)
 app_id = "age_mobilenet_v1_utkface"
@@ -35,10 +32,12 @@ data = get_utkface_dataset()
 addrs = data["addrs"]
 age_labels = data["age_labels"]
 
-train_generator = DataGenerator(
+imp = task_importance_weights(age_labels, num_classes)
+
+train_generator = AgeDataGenerator(
     addrs[validation_size:], age_labels[validation_size:], batch_size, num_classes
 )
-val_generator = DataGenerator(
+val_generator = AgeDataGenerator(
     addrs[:validation_size], age_labels[:validation_size], batch_size, num_classes
 )
 steps_per_epoch = train_generator.n // train_generator.batch_size
@@ -52,13 +51,18 @@ model = keras.applications.mobilenet.MobileNet(
 x = model.output
 x = keras.layers.GlobalAveragePooling2D()(x)
 # x = Dropout(0.5)(x)
-preds = keras.layers.Dense(num_classes, activation="softmax")(x)
-model = keras.models.Model(inputs=model.input, outputs=preds)
+x = keras.layers.Dense(1, use_bias=False)(x)
+x = Linear_1_bias(num_classes)(x)
+
+model = keras.models.Model(inputs=model.input, outputs=x)
 
 print("=============================== MODEL DESC =============================")
 for i, layer in enumerate(model.layers):
     print(i, layer.name)
 print("========================================================================")
+
+if num_gpus > 1:
+    model = keras.utils.multi_gpu_model(model, gpus=num_gpus, cpu_merge=True)
 
 ################################################################################
 # Load checkpoint
@@ -68,11 +72,8 @@ if not os.path.exists(os.path.dirname(checkpoint_path)):
     os.makedirs(os.path.dirname(checkpoint_path))
 
 # Load previous checkpoints
-latest_checkpoint = get_latest_checkpoint(
-    os.path.join(ROOT_DIR, "outputs", "checkpoints", "age_mobilenet_v1_audience")
-)
-if os.path.exists(latest_checkpoint):
-    model.load_weights(latest_checkpoint)
+if os.path.exists(checkpoint_path):
+    model.load_weights(checkpoint_path)
 
 ################################################################################
 # Checkpoint and tensorboard callbacks
@@ -87,13 +88,16 @@ checkpoint_callback = keras.callbacks.ModelCheckpoint(
 log_path = os.path.join(ROOT_DIR, "outputs", "logs", app_id)
 tensorboard_callback = keras.callbacks.TensorBoard(log_dir=log_path, batch_size=batch_size)
 
+callback_list = [checkpoint_callback, tensorboard_callback, csv_logger]
 
 ################################################################################
 # Train
 ################################################################################
 # Adam optimizer
 opt = keras.optimizers.Adam(lr=0.001)
-model.compile(optimizer=opt, loss="categorical_crossentropy", metrics=[mae_pred, "accuracy"])
+
+coral_loss = coral_loss(imp)
+model.compile(optimizer=opt, loss=coral_loss, metrics=[mae_pred])
 
 model.fit_generator(
     generator=train_generator,
@@ -104,5 +108,5 @@ model.fit_generator(
     shuffle=True,
     use_multiprocessing=True,
     workers=6,
-    callbacks=[checkpoint_callback, tensorboard_callback, csv_logger],
+    callbacks=callback_list,
 )
