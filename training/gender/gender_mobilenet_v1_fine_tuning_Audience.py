@@ -6,7 +6,6 @@ from tensorflow import keras
 from dataset import DataGenerator
 from dataset.Audience import get_audience_dataset
 from definitions import ROOT_DIR
-from utils import get_latest_checkpoint
 from utils.preresiqusites import run_preresiqusites
 
 # Set gpu usage
@@ -61,18 +60,13 @@ print("========================================================================"
 ################################################################################
 # Load checkpoint
 ################################################################################
-checkpoint_path = os.path.join(
-    ROOT_DIR, "outputs", "checkpoints", app_id, "ckpt-{epoch:02d}-{val_acc:.2f}.h5"
-)
+checkpoint_path = os.path.join(ROOT_DIR, "outputs", "checkpoints", app_id, "ckpt.h5")
 if not os.path.exists(os.path.dirname(checkpoint_path)):
     os.makedirs(os.path.dirname(checkpoint_path))
 
 # Load previous checkpoints
-latest_checkpoint = get_latest_checkpoint(
-    os.path.join(ROOT_DIR, "outputs", "checkpoints", "gender_mobilenet_v1_imdb_wiki")
-)
-if os.path.exists(latest_checkpoint):
-    model.load_weights(latest_checkpoint)
+if os.path.exists(checkpoint_path):
+    model.load_weights(checkpoint_path)
 
 ################################################################################
 # Checkpoint and tensorboard callbacks
