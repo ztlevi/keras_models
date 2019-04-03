@@ -46,8 +46,6 @@ def storage_add_images(img_storage, age_storage, gender_storage, race_storage, a
 
 
 def dump_utkface_pkl(output_path):
-    storage_dtype = tables.UInt8Atom()
-
     addrs = glob.glob(UTKFace_DATASET_DIR + "*.jpg")
     random.shuffle(addrs)
     print(len(addrs))
@@ -56,6 +54,9 @@ def dump_utkface_pkl(output_path):
     for addr in addrs:
         filename = os.path.basename(addr)
         info = filename.split("_")
+        # Some image file has missing property
+        if len(info) < 4:
+            continue
         try:
             age = int(info[0])
             gender = int(info[1])
