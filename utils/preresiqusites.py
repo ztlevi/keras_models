@@ -10,6 +10,7 @@ def create_output_dirs_if_not_exists():
         "outputs/best_checkpoints",
         "outputs/logs",
         "outputs/freeze",
+        "outputs/figures"
     ]
 
     for directory in dirs:

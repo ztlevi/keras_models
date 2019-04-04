@@ -1,21 +1,21 @@
 import os
+from math import ceil
 from random import shuffle
 
-import cv2
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
-from math import ceil
 from skimage.io import imread
 from tensorflow import keras
 
+import cv2
 from dataset import DataGenerator
 from dataset.Audience import get_audience_dataset
 from dataset.imdb_wiki import get_imdb_wiki_dataset
+from dataset.UTKFace import get_utkface_dataset
 from definitions import ROOT_DIR
-from training.age import Linear_1_bias, task_importance_weights
-from training.age import coral_loss
-from training.age import mae_pred
+from training.age import (Linear_1_bias, coral_loss, mae_pred,
+                          task_importance_weights)
 
 
 def evaluate_tut_model():
@@ -63,12 +63,11 @@ def evaluate_age_mobilenet_v1_imdb_wiki():
 
     # steps_per_epoch = val_generator.n // val_generator.batch_size
 
-    def relu6(x):
-        return keras.backend.relu(x, max_value=6)
-
-    with keras.utils.CustomObjectScope({'relu6': relu6, 'Linear_1_bias': Linear_1_bias}):
-        loss = coral_loss(imp)
-        model = keras.models.load_model(checkpoint_path, custom_objects={'loss': loss, 'mae_pred': mae_pred})
+    loss = coral_loss(imp)
+    model = keras.models.load_model(
+        checkpoint_path,
+        custom_objects={"loss": loss, "mae_pred": mae_pred, "Linear_1_bias": Linear_1_bias},
+    )
 
     pred = model.predict_generator(generator=val_generator)
     pred = pred > 0.5
@@ -93,34 +92,61 @@ def evaluate_age_mobilenet_v1_audience():
         ROOT_DIR, "outputs", "checkpoints", "age_mobilenet_v1_audience", "ckpt.h5"
     )
 
+    imp = task_importance_weights(age_labels, num_classes)
+
     # Building Mobilenet
 
     val_generator = DataGenerator(addrs, age_labels, batch_size, num_classes)
     # steps_per_epoch = val_generator.n // val_generator.batch_size
 
-    model = keras.models.load_model(checkpoint_path, custom_objects={'mae_pred': mae_pred})
-
-    # TESTING
-    for i in range(200, 800, 10):
-        addr = addrs[i]
-        print(addr)
-        img = cv2.imread(addr)
-        cv2.imshow("img", img)
-        norm_img = cv2.normalize(img, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
-        cv2.waitKey(1)
-        X = np.expand_dims(cv2.resize(norm_img, (224, 224)), axis=0)
-        y_pred = model.predict(X)
-        Y = np.argmax(y_pred)
-        print(Y)
+    loss = coral_loss(imp)
+    model = keras.models.load_model(
+        checkpoint_path,
+        custom_objects={"loss": loss, "mae_pred": mae_pred, "Linear_1_bias": Linear_1_bias},
+    )
 
     # evaluation = model.evaluate(X, keras.utils.to_categorical(Y), batch_size=128)
-    score = model.predict_generator(generator=val_generator)
-    y_pred = np.argmax(score, axis=1)
+    pred = model.predict_generator(generator=val_generator)
+    pred = pred > 0.5
+    y_pred = np.sum(pred, axis=1)
     mae = np.mean(np.abs(age_labels - y_pred))
     print("mae: {}".format(mae))
 
-    acc = np.sum(y_pred == age_labels) / len(age_labels)
-    print("acc: {}".format(acc))
+    plot(validation_size, batch_size, addrs, gender_labels, age_labels, y_pred)
+
+
+def evaluate_age_mobilenet_v1_utkface():
+    validation_size = 1000
+    data = get_utkface_dataset()
+    addrs = data["addrs"][:validation_size]
+    age_labels = data["age_labels"][:validation_size]
+    gender_labels = data["gender_labels"][:validation_size]
+
+    num_classes = 101
+    batch_size = 64
+    checkpoint_path = os.path.join(
+        ROOT_DIR, "outputs", "checkpoints", "age_mobilenet_v1_utkface", "ckpt.h5"
+    )
+
+    imp = task_importance_weights(age_labels, num_classes)
+
+    # Building Mobilenet
+
+    val_generator = DataGenerator(addrs, age_labels, batch_size, num_classes)
+    # steps_per_epoch = val_generator.n // val_generator.batch_size
+
+    loss = coral_loss(imp)
+    model = keras.models.load_model(
+        checkpoint_path,
+        custom_objects={"loss": loss, "mae_pred": mae_pred, "Linear_1_bias": Linear_1_bias},
+    )
+
+    # evaluation = model.evaluate(X, keras.utils.to_categorical(Y), batch_size=128)
+    pred = model.predict_generator(generator=val_generator)
+    pred = pred > 0.5
+    y_pred = np.sum(pred, axis=1)
+    mae = np.mean(np.abs(age_labels - y_pred))
+    print("mae: {}".format(mae))
 
     plot(validation_size, batch_size, addrs, gender_labels, age_labels, y_pred)
 
@@ -161,11 +187,13 @@ def plot(num_images, batch_size, addrs, gender_labels, age_labels, y_pred):
                     + "_pred_"
                     + str(seg_pred[j])
                 )
+        plt.savefig(os.path.join(ROOT_DIR, "outputs","figures", "evaluation_batch_{}".format(x)))
 
     plt.show()
 
 
 if __name__ == "__main__":
     # evaluate_tut_model()
-    evaluate_age_mobilenet_v1_imdb_wiki()
+    # evaluate_age_mobilenet_v1_imdb_wiki()
     # evaluate_age_mobilenet_v1_audience()
+    evaluate_age_mobilenet_v1_utkface()
