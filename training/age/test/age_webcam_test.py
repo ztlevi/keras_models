@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 from PIL import Image
 from tensorflow import keras
@@ -12,6 +14,7 @@ model = keras.models.load_model(
 )
 video = cv2.VideoCapture(0)
 
+y_preds = []
 while True:
     _, frame = video.read()
 
@@ -37,12 +40,17 @@ while True:
     pred = pred > 0.5
     y_pred = np.sum(pred)
 
+    y_preds += [y_pred]
+    if len(y_preds) > 15:
+        y_preds.pop(0)
+    pred_age = int(np.mean(y_preds))
+
     # if prediction is 0, which means I am missing on the image, then show the frame in gray color.
     # if prediction == 0:
     #     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
     font = cv2.FONT_HERSHEY_SIMPLEX
-    cv2.putText(frame, "Age: {}".format(y_pred), (40, 40), font, 2, (255, 255, 255), 2, cv2.LINE_AA)
+    cv2.putText(frame, "Age: {}".format(pred_age), (50, 50), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
 
     cv2.imshow("AGE", frame)
     # cv2.imshow("AGE", img)
