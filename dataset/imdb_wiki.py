@@ -128,8 +128,8 @@ def dump_imdb_wiki_pkl(output_path):
     print(f"\nFinish dumping data!!!")
 
 
-def get_imdb_wiki_dataset():
-    output_path = os.path.join(IMDB_WIKI_DATASET_DIR, "imdb-wiki.pkl")
+def get_imdb_wiki_dataset(use_remote=False):
+    output_path = os.path.join(IMDB_WIKI_DATASET_DIR[use_remote], "imdb-wiki.pkl")
     return pickle.load(open(output_path, "rb"))
 
 

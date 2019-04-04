@@ -6,14 +6,23 @@ from tensorflow import keras
 
 from dataset import DataGenerator
 from dataset.Audience import get_audience_dataset
-from definitions import ROOT_DIR
-from training.age import mae_pred
+from definitions import ROOT_DIR, all_args
+from training.age import Linear_1_bias, mae_pred, task_importance_weights
 from utils.preresiqusites import run_preresiqusites
 
-# Set gpu usage
-config = tf.ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction = 0.6
-keras.backend.set_session(tf.Session(config=config))
+args = all_args[os.path.splitext(os.path.basename(__file__))[0]]
+
+if args["use_remote"]:
+    os.environ["CUDA_VISIBLE_DEVICES"] = args.GPUS
+    num_gpus = len(args.GPUS.split(","))
+else:
+    # Set gpu usage
+    config = tf.ConfigProto()
+    config.gpu_options.per_process_gpu_memory_fraction = 0.6
+    keras.backend.set_session(tf.Session(config=config))
+
+    num_gpus = 1
+
 
 run_preresiqusites()
 
@@ -33,6 +42,8 @@ data = get_audience_dataset()
 addrs = data["addrs"]
 age_labels = data["age_labels"]
 
+imp = task_importance_weights(age_labels, num_classes)
+
 train_generator = DataGenerator(
     addrs[validation_size:], age_labels[validation_size:], batch_size, num_classes
 )
@@ -50,31 +61,39 @@ model = keras.applications.mobilenet.MobileNet(
 x = model.output
 x = keras.layers.GlobalAveragePooling2D()(x)
 # x = Dropout(0.5)(x)
-preds = keras.layers.Dense(num_classes, activation="softmax")(x)
-model = keras.models.Model(inputs=model.input, outputs=preds)
+x = keras.layers.Dense(1, use_bias=False)(x)
+x = Linear_1_bias(num_classes)(x)
+
+model = keras.models.Model(inputs=model.input, outputs=x)
 
 print("=============================== MODEL DESC =============================")
 for i, layer in enumerate(model.layers):
     print(i, layer.name)
 print("========================================================================")
 
+if num_gpus > 1:
+    model = keras.utils.multi_gpu_model(model, gpus=num_gpus, cpu_merge=True)
+
 ################################################################################
 # Load checkpoint
 ################################################################################
+# Load IMDB_WIKI checkpoint
+imdb_wiki_checkpoint = os.path.join(
+    ROOT_DIR, "outputs", "checkpoints", "age_mobilenet_v1_imdb_wiki", "ckpt.h5"
+)
+if os.path.exists(imdb_wiki_checkpoint):
+    model.load_weights(imdb_wiki_checkpoint)
+
+# Load previous checkpoints
 checkpoint_path = os.path.join(ROOT_DIR, "outputs", "checkpoints", app_id, "ckpt.h5")
 if not os.path.exists(os.path.dirname(checkpoint_path)):
     os.makedirs(os.path.dirname(checkpoint_path))
-
-# Load previous checkpoints
 if os.path.exists(checkpoint_path):
     model.load_weights(checkpoint_path)
 
 ################################################################################
 # Checkpoint and tensorboard callbacks
 ################################################################################
-# checkpoint_callback = keras.callbacks.ModelCheckpoint(
-#     checkpoint_path, monitor="val_loss", verbose=1, save_best_only=False, period=1
-# )
 csv_logger = keras.callbacks.CSVLogger(
     os.path.join(ROOT_DIR, "outputs", "logs", app_id, "log.csv"), append=True, separator=","
 )
@@ -85,6 +104,7 @@ checkpoint_callback = keras.callbacks.ModelCheckpoint(
 log_path = os.path.join(ROOT_DIR, "outputs", "logs", app_id)
 tensorboard_callback = keras.callbacks.TensorBoard(log_dir=log_path, batch_size=batch_size)
 
+callback_list = [checkpoint_callback, tensorboard_callback, csv_logger]
 
 ################################################################################
 # Train
@@ -102,5 +122,5 @@ model.fit_generator(
     shuffle=True,
     use_multiprocessing=True,
     workers=6,
-    callbacks=[checkpoint_callback, tensorboard_callback, csv_logger],
+    callbacks=callback_list,
 )

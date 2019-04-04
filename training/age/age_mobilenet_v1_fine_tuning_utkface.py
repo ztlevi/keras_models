@@ -4,15 +4,23 @@ import tensorflow as tf
 from tensorflow import keras
 
 from dataset.UTKFace import get_utkface_dataset
-from definitions import ROOT_DIR
+from definitions import ROOT_DIR, all_args
 from training.age import (AgeDataGenerator, Linear_1_bias, coral_loss,
                           mae_pred, task_importance_weights)
 from utils.preresiqusites import run_preresiqusites
 
-# GPUS = "4,5,6,7"
-GPUS = "0"
-os.environ["CUDA_VISIBLE_DEVICES"] = GPUS
-num_gpus = len(GPUS.split(","))
+args = all_args[os.path.splitext(os.path.basename(__file__))[0]]
+
+if args["use_remote"]:
+    os.environ["CUDA_VISIBLE_DEVICES"] = args.GPUS
+    num_gpus = len(args.GPUS.split(","))
+else:
+    # Set gpu usage
+    config = tf.ConfigProto()
+    config.gpu_options.per_process_gpu_memory_fraction = 0.6
+    keras.backend.set_session(tf.Session(config=config))
+
+    num_gpus = 1
 
 run_preresiqusites()
 
@@ -28,7 +36,7 @@ app_id = "age_mobilenet_v1_utkface"
 ################################################################################
 # Create dataset generator
 ################################################################################
-data = get_utkface_dataset()
+data = get_utkface_dataset(args["use_remote"])
 addrs = data["addrs"]
 age_labels = data["age_labels"]
 
@@ -67,11 +75,17 @@ if num_gpus > 1:
 ################################################################################
 # Load checkpoint
 ################################################################################
+# Load IMDB_WIKI checkpoint
+imdb_wiki_checkpoint = os.path.join(
+    ROOT_DIR, "outputs", "checkpoints", "age_mobilenet_v1_imdb_wiki", "ckpt.h5"
+)
+if os.path.exists(imdb_wiki_checkpoint):
+    model.load_weights(imdb_wiki_checkpoint)
+
+# Load previous checkpoint
 checkpoint_path = os.path.join(ROOT_DIR, "outputs", "checkpoints", app_id, "ckpt.h5")
 if not os.path.exists(os.path.dirname(checkpoint_path)):
     os.makedirs(os.path.dirname(checkpoint_path))
-
-# Load previous checkpoints
 if os.path.exists(checkpoint_path):
     model.load_weights(checkpoint_path)
 
@@ -102,7 +116,7 @@ model.compile(optimizer=opt, loss=coral_loss, metrics=[mae_pred])
 model.fit_generator(
     generator=train_generator,
     steps_per_epoch=steps_per_epoch,
-    epochs=20,
+    epochs=40,
     verbose=1,
     validation_data=val_generator,
     shuffle=True,

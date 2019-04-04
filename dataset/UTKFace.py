@@ -1,10 +1,10 @@
 import glob
-import numpy as np
 import os
 import pickle
 import random
 import sys
 
+import numpy as np
 import tables
 
 import cv2
@@ -81,8 +81,8 @@ def dump_utkface_pkl(output_path):
     print(f"\nFinish dumping data!!!")
 
 
-def get_utkface_dataset():
-    output_path = os.path.join(UTKFace_DATASET_DIR, "..", "UTKFace.pkl")
+def get_utkface_dataset(use_remote=False):
+    output_path = os.path.join(UTKFace_DATASET_DIR[use_remote], "..", "UTKFace.pkl")
     return pickle.load(open(output_path, "rb"))
 
 
