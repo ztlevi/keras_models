@@ -47,7 +47,7 @@ model = keras.applications.mobilenet.MobileNet(
 )
 x = model.output
 x = keras.layers.GlobalAveragePooling2D()(x)
-# x = Dropout(0.5)(x)
+x = keras.layers.Dropout(0.001)(x)
 preds = keras.layers.Dense(num_classes, activation="softmax")(x)
 model = keras.models.Model(inputs=model.input, outputs=preds)
 

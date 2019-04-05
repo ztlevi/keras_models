@@ -58,7 +58,7 @@ model = keras.applications.mobilenet.MobileNet(
 )
 x = model.output
 x = keras.layers.GlobalAveragePooling2D()(x)
-# x = Dropout(0.5)(x)
+x = keras.layers.Dropout(0.001)(x)
 x = keras.layers.Dense(1, use_bias=False)(x)
 x = Linear_1_bias(num_classes)(x)
 

@@ -63,6 +63,7 @@ for layer in model.layers:
 
 x = model.output
 x = keras.layers.GlobalAveragePooling2D()(x)
+x = keras.layers.Dropout(0.001)(x)
 x = keras.layers.Dense(1, use_bias=False)(x)
 x = Linear_1_bias(num_classes)(x)
 
