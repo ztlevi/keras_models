@@ -7,6 +7,7 @@ UTKFace_DATASET_DIR = [
     "/media/ztlevi/HDD/UTKFace/UTKFace/",
     "/data/workspace_tingzhou/UTKFace/UTKFace/",
 ]
+AFFECTNET_DATASET_DIR = "/media/ztlevi/HDD/Affectnet"
 
 all_args = {
     "age_mobilenet_v1_fine_tuning_imdb_wiki": {"use_remote": False, "GPUS": "4,5,6,7"},

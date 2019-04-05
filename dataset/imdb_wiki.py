@@ -134,5 +134,5 @@ def get_imdb_wiki_dataset(use_remote=False):
 
 
 if __name__ == "__main__":
-    output_path = os.path.join(IMDB_WIKI_DATASET_DIR, "imdb-wiki.pkl")
+    output_path = os.path.join(IMDB_WIKI_DATASET_DIR[0], "imdb-wiki.pkl")
     dump_imdb_wiki_pkl(output_path)
