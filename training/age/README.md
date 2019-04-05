@@ -1,21 +1,5 @@
 # Age Estimation
 
-## Data transfer
-
-- Download the age estimation rquired data (model, video and etc.)
-
-```sh
-dsmcd
-rsync -avz --progress -h root@10.213.37.34:/data/DSM_Data/age_estimation/* ./data/age_estimation
-```
-
-- Upload the new data to the server
-
-```sh
-dsmcd
-rsync -avzu --progress --delete -h ./data/age_estimation/* root@10.213.37.34:/data/DSM_Data/age_estimation
-```
-
 ## Dataset
 
 1. [IMDB-WIKI](https://data.vision.ee.ethz.ch/cvl/rrothe/imdb-wiki/): 505310 automatically annotated
