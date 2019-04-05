@@ -9,8 +9,9 @@ from skimage.io import imread
 from dataset.Affectnet import get_affectnet_dataset
 
 data = get_affectnet_dataset()
-addrs = data["addrs"]
-expression_labels = data["expression_labels"]
+addrs = data["training"]["addrs"]
+expression_labels = data["training"]["expression_labels"]
+expression_labels[expression_labels > 6] = 0
 
 num_images = len(addrs)
 
