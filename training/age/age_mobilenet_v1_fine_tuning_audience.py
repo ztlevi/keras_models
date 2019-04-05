@@ -6,7 +6,7 @@ from tensorflow import keras
 
 from dataset import DataGenerator
 from dataset.Audience import get_audience_dataset
-from definitions import ROOT_DIR, all_args
+from definitions import NUM_CPUS, ROOT_DIR, all_args
 from training.age import Linear_1_bias, mae_pred, task_importance_weights
 from utils.preresiqusites import run_preresiqusites
 
@@ -121,6 +121,6 @@ model.fit_generator(
     validation_data=val_generator,
     shuffle=True,
     use_multiprocessing=True,
-    workers=6,
+    workers=NUM_CPUS,
     callbacks=callback_list,
 )

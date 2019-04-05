@@ -5,7 +5,7 @@ from tensorflow import keras
 
 from dataset import DataGenerator
 from dataset.imdb_wiki import get_imdb_wiki_dataset
-from definitions import ROOT_DIR
+from definitions import NUM_CPUS, ROOT_DIR
 from utils.preresiqusites import run_preresiqusites
 
 # Set gpu usage
@@ -101,7 +101,7 @@ model.fit_generator(
     validation_data=val_generator,
     shuffle=True,
     use_multiprocessing=True,
-    workers=6,
+    workers=NUM_CPUS,
     callbacks=[checkpoint_callback, tensorboard_callback],
 )
 
@@ -119,7 +119,7 @@ model.fit_generator(
     validation_data=val_generator,
     shuffle=True,
     use_multiprocessing=True,
-    workers=6,
+    workers=NUM_CPUS,
     callbacks=[checkpoint_callback, tensorboard_callback],
     initial_epoch=3,
 )
