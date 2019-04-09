@@ -1,18 +1,17 @@
 import os
-from math import ceil
 from random import shuffle
 
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
+from math import ceil
 from skimage.io import imread
 from tensorflow import keras
 
-import cv2
 from dataset import DataGenerator
 from dataset.Audience import get_audience_dataset
-from dataset.imdb_wiki import get_imdb_wiki_dataset
 from dataset.UTKFace import get_utkface_dataset
+from dataset.imdb_wiki import get_imdb_wiki_dataset
 from definitions import ROOT_DIR
 from training.age import (Linear_1_bias, coral_loss, mae_pred,
                           task_importance_weights)
@@ -50,6 +49,9 @@ def evaluate_age_mobilenet_v1_imdb_wiki():
     batch_size = 64
 
     imp = task_importance_weights(age_labels, num_classes)
+    plt.figure("Weight importance")
+    plt.plot(imp)
+    plt.show()
 
     checkpoint_path = os.path.join(
         ROOT_DIR, "outputs", "checkpoints", "age_mobilenet_v1_imdb_wiki", "ckpt.h5"
@@ -93,6 +95,9 @@ def evaluate_age_mobilenet_v1_audience():
     )
 
     imp = task_importance_weights(age_labels, num_classes)
+    plt.figure("Weight importance")
+    plt.plot(imp)
+    plt.show()
 
     # Building Mobilenet
 
@@ -129,6 +134,9 @@ def evaluate_age_mobilenet_v1_utkface():
     )
 
     imp = task_importance_weights(age_labels, num_classes)
+    plt.figure("Weight importance")
+    plt.plot(imp)
+    plt.show()
 
     # Building Mobilenet
 
