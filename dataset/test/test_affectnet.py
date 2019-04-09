@@ -7,6 +7,7 @@ from scipy.stats import norm
 from skimage.io import imread
 
 from dataset.Affectnet import get_affectnet_dataset
+from utils import plot_dist
 
 data = get_affectnet_dataset()
 addrs = data["training"]["addrs"]
@@ -16,12 +17,7 @@ expression_labels[expression_labels > 6] = 0
 num_images = len(addrs)
 
 # Plotting Age distribution
-sorted_expression = sorted(expression_labels)
-fit = norm.pdf(sorted_expression, np.mean(sorted_expression), np.std(sorted_expression))
-plt.figure("Experssion distribution")
-plt.plot(sorted_expression, fit, "-o")
-plt.hist(sorted_expression, bins=20, density=True)
-plt.show()
+plot_dist(expression_labels)
 
 
 batch_size = 64

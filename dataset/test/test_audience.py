@@ -7,6 +7,7 @@ from scipy.stats import norm
 from skimage.io import imread
 
 from dataset.Audience import get_audience_dataset
+from utils import plot_dist
 
 data = get_audience_dataset()
 addrs = data["addrs"]
@@ -16,13 +17,7 @@ age_labels = data["age_labels"]
 num_images = len(addrs)
 
 # Plotting Age distribution
-sorted_age = sorted(age_labels)
-fit = norm.pdf(sorted_age, np.mean(sorted_age), np.std(sorted_age))
-plt.figure("Age distribution")
-plt.plot(sorted_age, fit, "-o")
-plt.hist(sorted_age, bins=20, density=True)
-plt.show()
-
+plot_dist(age_labels)
 
 batch_size = 64
 num_class = 2
