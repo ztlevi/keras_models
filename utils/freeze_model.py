@@ -1,12 +1,13 @@
 # https://stackoverflow.com/questions/51858203/cant-import-frozen-graph-with-batchnorm-layer?noredirect=1&lq=1
 import os
 
+import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.python.framework import graph_io
 
 from definitions import ROOT_DIR
-from training.age import mae_pred
+from training.age import Linear_1_bias, coral_loss, mae_pred
 
 
 def freeze_graph(graph, session, output, output_path):
@@ -20,10 +21,19 @@ def freeze_graph(graph, session, output, output_path):
 
 keras.backend.set_learning_phase(0)  # this line most important
 
-checkpoint_path = (
-    "/home/ztlevi/Developer/keras_models/outputs/checkpoints/age_mobilenet_v1_utkface/ckpt.h5"
+model = keras.models.load_model(
+    os.path.join(ROOT_DIR, "outputs", "checkpoints", "7expr_mobilenet_v1_affectnet", "ckpt.h5")
 )
-model = keras.models.load_model(checkpoint_path, custom_objects={"mae_pred": mae_pred})
+
+# # Age model
+# loss = coral_loss(np.ones(101 - 1))
+# checkpoint_path = (
+#     "/home/ztlevi/Developer/keras_models/outputs/checkpoints/age_mobilenet_v1_utkface/ckpt.h5"
+# )
+# model = keras.models.load_model(
+#     checkpoint_path,
+#     custom_objects={"loss": loss, "mae_pred": mae_pred, "Linear_1_bias": Linear_1_bias},
+# )
 
 # TUT age model
 # model = keras.models.load_model("/home/ztlevi/Developer/keras_models/outputs/tut/age/model.h5",

@@ -40,10 +40,11 @@ while True:
     pred = pred > 0.5
     y_pred = np.sum(pred)
 
-    y_preds += [y_pred]
-    if len(y_preds) > 15:
-        y_preds.pop(0)
-    pred_age = int(np.mean(y_preds))
+    # y_preds += [y_pred]
+    # if len(y_preds) > 15:
+    #     y_preds.pop(0)
+    # pred_age = int(np.mean(y_preds))
+    pred_age = y_pred
 
     # if prediction is 0, which means I am missing on the image, then show the frame in gray color.
     # if prediction == 0:
