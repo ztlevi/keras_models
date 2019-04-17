@@ -2,13 +2,14 @@ import multiprocessing
 import os
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))  # This is your Project Root
-IMDB_WIKI_DATASET_DIR = ["/media/ztlevi/HDD/IMDB-WIKI", "/data/workspace_tingzhou/IMDB-WIKI"]
-AUDIENCE_DATASET_DIR = "/media/ztlevi/HDD/AdienceBenchmarkOfUnfilteredFaces"
+IMDB_WIKI_DATASET_DIR = ["/media/ztlevi/HDD/IMDB-WIKI", "/data/workspace_tingzhou/IMDB-WIKI/"]
+AUDIENCE_DATASET_DIR = "/media/ztlevi/HDD/AdienceBenchmarkOfUnfilteredFaces/"
 UTKFace_DATASET_DIR = [
     "/media/ztlevi/HDD/UTKFace/UTKFace/",
     "/data/workspace_tingzhou/UTKFace/UTKFace/",
 ]
-AFFECTNET_DATASET_DIR = "/media/ztlevi/HDD/Affectnet"
+AFFECTNET_DATASET_DIR = "/media/ztlevi/HDD/Affectnet/"
+HANDTIP_DATASET_DIR = "/media/ztlevi/HDD/Hand_t/Train_t/"
 
 NUM_CPUS = multiprocessing.cpu_count()
 
