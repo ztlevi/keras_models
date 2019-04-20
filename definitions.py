@@ -9,7 +9,7 @@ UTKFace_DATASET_DIR = [
     "/data/workspace_tingzhou/UTKFace/UTKFace/",
 ]
 AFFECTNET_DATASET_DIR = "/media/ztlevi/HDD/Affectnet/"
-HANDTIP_DATASET_DIR = "/media/ztlevi/HDD/Hand_t/Train_t/"
+HANDTIP_DATASET_DIR = "/media/ztlevi/HDD/HandTip/Train_t/"
 
 NUM_CPUS = multiprocessing.cpu_count()
 
