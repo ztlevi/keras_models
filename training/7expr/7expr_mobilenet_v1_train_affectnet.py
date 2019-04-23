@@ -11,6 +11,7 @@ from utils.preresiqusites import run_preresiqusites
 args = all_args[os.path.splitext(os.path.basename(__file__))[0]]
 
 if args["use_remote"]:
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = args.GPUS
     num_gpus = len(args.GPUS.split(","))
 else:

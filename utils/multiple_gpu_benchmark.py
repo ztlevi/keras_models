@@ -16,6 +16,7 @@ from tensorflow.keras.layers import (Conv2D, Dense, Dropout, Flatten,
 from tensorflow.keras.models import Sequential
 
 GPUS = "4,5,6,7"
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = GPUS
 num_gpus = len(GPUS.split(","))
 
