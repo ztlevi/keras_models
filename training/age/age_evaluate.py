@@ -1,17 +1,17 @@
 import os
+from math import ceil
 from random import shuffle
 
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
-from math import ceil
-from skimage.io import imread
 from tensorflow import keras
 
+import cv2
 from dataset import DataGenerator
 from dataset.Audience import get_audience_dataset
-from dataset.UTKFace import get_utkface_dataset
 from dataset.imdb_wiki import get_imdb_wiki_dataset
+from dataset.UTKFace import get_utkface_dataset
 from definitions import ROOT_DIR
 from training.age import (Linear_1_bias, coral_loss, mae_pred,
                           task_importance_weights)
@@ -173,7 +173,7 @@ def plot(num_images, batch_size, addrs, gender_labels, age_labels, y_pred):
         i_e = min([(i + 1) * batch_size, num_images])  # index of the last image in this batch
 
         # read batch images and remove training mean
-        images = [imread(addr) for addr in addrs[i_s:i_e, ...]]
+        images = [cv2.cvtColor(cv2.imread(addr), cv2.COLOR_BGR2RGB) for addr in addrs[i_s:i_e, ...]]
 
         # read labels and convert to one hot encoding
         seg_gender = gender_labels[i_s:i_e]
@@ -195,7 +195,7 @@ def plot(num_images, batch_size, addrs, gender_labels, age_labels, y_pred):
                     + "_pred_"
                     + str(seg_pred[j])
                 )
-        plt.savefig(os.path.join(ROOT_DIR, "outputs","figures", "evaluation_batch_{}".format(x)))
+        plt.savefig(os.path.join(ROOT_DIR, "outputs", "figures", "evaluation_batch_{}".format(x)))
 
     plt.show()
 

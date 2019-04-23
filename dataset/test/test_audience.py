@@ -4,8 +4,8 @@ from random import shuffle
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import norm
-from skimage.io import imread
 
+import cv2
 from dataset.Audience import get_audience_dataset
 from utils import plot_dist
 
@@ -36,7 +36,7 @@ for x in range(5):
     i_e = min([(i + 1) * batch_size, num_images])  # index of the last image in this batch
 
     # read batch images and remove training mean
-    images = [imread(addr) for addr in addrs[i_s:i_e, ...]]
+    images = [cv2.cvtColor(cv2.imread(addr), cv2.COLOR_BGR2RGB) for addr in addrs[i_s:i_e, ...]]
 
     # read labels and convert to one hot encoding
     seg_gender = gender_labels[i_s:i_e]

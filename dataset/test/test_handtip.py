@@ -3,8 +3,8 @@ from random import shuffle
 
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
-from skimage.io import imread
 
+import cv2
 from dataset.HandTip import get_handtip_dataset
 
 data = get_handtip_dataset()
@@ -32,7 +32,7 @@ for x in range(5):
     i_e = min([(i + 1) * batch_size, num_images])  # index of the last image in this batch
 
     # read batch images and remove training mean
-    images = [imread(addr) for addr in addrs[i_s:i_e, ...]]
+    images = [cv2.cvtColor(cv2.imread(addr), cv2.COLOR_BGR2RGB) for addr in addrs[i_s:i_e, ...]]
     seg_xmin = xmin[i_s:i_e, ...]
     seg_ymin = ymin[i_s:i_e, ...]
     seg_xmax = xmax[i_s:i_e, ...]

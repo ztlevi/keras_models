@@ -7,7 +7,7 @@ This repo contains trainig/evaluating/testing codes for various models using ten
 ```python
 conda create -n tf python=3.6
 source activate tf
-conda install -c conda-forge tensorflow-gpu=1.12.0 scikit-image
+conda install -c conda-forge tensorflow-gpu=1.12.0
 conda install -c menpo opencv3
 ```
 
