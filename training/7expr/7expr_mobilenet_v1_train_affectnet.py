@@ -5,10 +5,10 @@ from tensorflow import keras
 
 from dataset import DataGenerator
 from dataset.Affectnet import get_affectnet_dataset
-from definitions import NUM_CPUS, ROOT_DIR, all_args
+from definitions import NUM_CPUS, ROOT_DIR, all_args, get_relative_path
 from utils.preresiqusites import run_preresiqusites
 
-args = all_args[os.path.splitext(os.path.basename(__file__))[0]]
+args = all_args[get_relative_path(__file__)]
 
 if args["use_remote"]:
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"

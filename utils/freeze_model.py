@@ -6,7 +6,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.python.framework import graph_io
 
-from definitions import ROOT_DIR, all_args
+from definitions import ROOT_DIR, all_args, get_relative_path
 from training.age import Linear_1_bias, coral_loss, mae_pred
 
 
@@ -49,6 +49,7 @@ def load_tut_age_model():
 
 
 if __name__ == "__main__":
+    args = all_args[get_relative_path(__file__)]
     keras.backend.set_learning_phase(0)  # this line most important
     keras_load_model = {
         "general": load_general_model("7expr_mobilenet_v1_affectnet"),
@@ -56,7 +57,6 @@ if __name__ == "__main__":
         "tut_age": load_tut_age_model,
     }
 
-    args = all_args[os.path.splitext(os.path.basename(__file__))[0]]
     model = keras_load_model[args["app"]]
 
     session = tf.keras.backend.get_session()

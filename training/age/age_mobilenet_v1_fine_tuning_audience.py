@@ -6,11 +6,11 @@ from tensorflow import keras
 
 from dataset import DataGenerator
 from dataset.Audience import get_audience_dataset
-from definitions import NUM_CPUS, ROOT_DIR, all_args
+from definitions import NUM_CPUS, ROOT_DIR, all_args, get_relative_path
 from training.age import Linear_1_bias, mae_pred, task_importance_weights
 from utils.preresiqusites import run_preresiqusites
 
-args = all_args[os.path.splitext(os.path.basename(__file__))[0]]
+args = all_args[get_relative_path(__file__)]
 
 if args["use_remote"]:
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
