@@ -13,6 +13,8 @@ def get_relative_path(file):
 NUM_CPUS = multiprocessing.cpu_count()
 
 ####################### DATASET #######################
+# NOTE: if the dataset_dir is an array, the first represents the local address,
+# while the second represents the remote server's
 IMDB_WIKI_DATASET_DIR = ["/media/ztlevi/HDD/IMDB-WIKI", "/data/workspace_tingzhou/IMDB-WIKI/"]
 AUDIENCE_DATASET_DIR = "/media/ztlevi/HDD/AdienceBenchmarkOfUnfilteredFaces/"
 UTKFace_DATASET_DIR = [
