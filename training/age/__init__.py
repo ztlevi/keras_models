@@ -1,8 +1,9 @@
-import cv2
 import numpy as np
-from tensorflow import keras
 import tensorflow as tf
+from tensorflow import keras
 from tensorflow.keras import backend as K
+
+import cv2
 
 
 # MAE
@@ -21,10 +22,15 @@ def task_importance_weights(label_array, num_classes):
     uniq = np.unique(label_array)
     num_examples = label_array.shape[0]
 
-    m = np.zeros(num_classes-1)
+    m = np.zeros(num_classes - 1)
 
     for i, t in enumerate(np.arange(np.min(uniq), np.max(uniq))):
-        m_k = np.max([label_array[label_array > t].shape[0], num_examples - label_array[label_array > t].shape[0]])
+        m_k = np.max(
+            [
+                label_array[label_array > t].shape[0],
+                num_examples - label_array[label_array > t].shape[0],
+            ]
+        )
         m[i] = np.sqrt(m_k)
 
     imp = m / np.max(m)
@@ -43,17 +49,21 @@ class AgeDataGenerator(keras.utils.Sequence):
         return int(np.ceil(len(self.image_filenames) / float(self.batch_size)))
 
     def __getitem__(self, idx):
-        batch_x = self.image_filenames[idx * self.batch_size: (idx + 1) * self.batch_size]
-        batch_y = self.labels[idx * self.batch_size: (idx + 1) * self.batch_size]
+        batch_x = self.image_filenames[idx * self.batch_size : (idx + 1) * self.batch_size]
+        batch_y = self.labels[idx * self.batch_size : (idx + 1) * self.batch_size]
+        batch_imgs = np.array(
+            [cv2.resize(cv2.imread(file_name), self.image_shape) for file_name in batch_x]
+        )
+        mean = np.mean(batch_imgs, axis=(1, 2), keepdims=True)
+        std = np.std(batch_imgs, axis=(1, 2), keepdims=True)
+        standardized_images = (batch_imgs - mean) / std
 
         levels = [[1] * label + [0] * (self.num_classes - 1 - label) for label in batch_y]
 
         return (
-            np.array(
-                [cv2.resize(cv2.imread(file_name) / 255.0, self.image_shape) for file_name in batch_x]
-            ),
+            standardized_images,
             # np.stack(batch_y, np.array(levels))
-            np.array(levels)
+            np.array(levels),
         )
 
 
@@ -63,10 +73,9 @@ class Linear_1_bias(keras.layers.Layer):
         super(Linear_1_bias, self).__init__(**kwargs)
 
     def build(self, input_shape):
-        self.linear_1_bais = self.add_weight(name="Liner_1_Bais",
-                                             shape=(self.num_classes - 1),
-                                             initializer="zeros",
-                                             trainable=True)
+        self.linear_1_bais = self.add_weight(
+            name="Liner_1_Bais", shape=(self.num_classes - 1), initializer="zeros", trainable=True
+        )
         # keras.backend.zeros(self.num_classes - 1)
         super(Linear_1_bias, self).build(input_shape)  # Be sure to call this at the end
 
@@ -77,14 +86,13 @@ class Linear_1_bias(keras.layers.Layer):
         return x
 
     def get_config(self):
-        config = {
-            'num_classes': self.num_classes,
-        }
+        config = {"num_classes": self.num_classes}
         base_config = super(Linear_1_bias, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))
 
     def compute_output_shape(self, input_shape):
         return (input_shape[0],)
+
 
 def coral_loss(imp):
     def loss(levels, logits):
@@ -92,7 +100,7 @@ def coral_loss(imp):
             (K.log(K.sigmoid(logits)) * levels + (K.log(K.sigmoid(logits)) - logits) * (1 - levels))
             * tf.convert_to_tensor(imp, dtype=tf.float32),
             axis=1,
-            )
+        )
         return K.mean(val)
 
     return loss

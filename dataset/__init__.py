@@ -1,6 +1,7 @@
 import numpy as np
-import cv2
 from tensorflow import keras
+
+import cv2
 
 
 class DataGenerator(keras.utils.Sequence):
@@ -17,11 +18,15 @@ class DataGenerator(keras.utils.Sequence):
     def __getitem__(self, idx):
         batch_x = self.image_filenames[idx * self.batch_size: (idx + 1) * self.batch_size]
         batch_y = self.labels[idx * self.batch_size: (idx + 1) * self.batch_size]
-
-        return (
-            np.array(
-                [cv2.resize(cv2.imread(file_name) / 255.0, self.image_shape) for file_name in batch_x]
-            ),
-            keras.utils.to_categorical(np.array(batch_y), num_classes=self.num_classes),
+        batch_imgs = np.array(
+            [cv2.resize(cv2.imread(file_name), self.image_shape) for file_name in batch_x]
         )
 
+        mean = np.mean(batch_imgs, axis=(1, 2), keepdims=True)
+        std = np.std(batch_imgs, axis=(1, 2), keepdims=True)
+        standardized_images = (batch_imgs - mean) / std
+
+        return (
+            standardized_images,
+            keras.utils.to_categorical(np.array(batch_y), num_classes=self.num_classes),
+        )
