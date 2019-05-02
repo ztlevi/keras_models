@@ -11,8 +11,7 @@ import os
 from tensorflow import keras
 from tensorflow.keras import backend as K
 from tensorflow.keras.datasets import mnist
-from tensorflow.keras.layers import (Conv2D, Dense, Dropout, Flatten,
-                                     MaxPooling2D)
+from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, MaxPooling2D
 from tensorflow.keras.models import Sequential
 
 GPUS = "4,5,6,7"

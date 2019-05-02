@@ -13,8 +13,7 @@ from dataset.Audience import get_audience_dataset
 from dataset.imdb_wiki import get_imdb_wiki_dataset
 from dataset.UTKFace import get_utkface_dataset
 from definitions import ROOT_DIR
-from training.age import (Linear_1_bias, coral_loss, mae_pred,
-                          task_importance_weights)
+from training.age import Linear_1_bias, coral_loss, mae_pred, task_importance_weights
 
 
 def evaluate_tut_model():

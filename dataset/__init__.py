@@ -16,8 +16,8 @@ class DataGenerator(keras.utils.Sequence):
         return int(np.ceil(len(self.image_filenames) / float(self.batch_size)))
 
     def __getitem__(self, idx):
-        batch_x = self.image_filenames[idx * self.batch_size: (idx + 1) * self.batch_size]
-        batch_y = self.labels[idx * self.batch_size: (idx + 1) * self.batch_size]
+        batch_x = self.image_filenames[idx * self.batch_size : (idx + 1) * self.batch_size]
+        batch_y = self.labels[idx * self.batch_size : (idx + 1) * self.batch_size]
         batch_imgs = np.array(
             [cv2.resize(cv2.imread(file_name), self.image_shape) for file_name in batch_x]
         )

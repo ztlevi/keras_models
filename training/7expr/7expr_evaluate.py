@@ -45,6 +45,7 @@ def evaluate_tut_model():
     evaluation = model.evaluate_generator(val_generator, batch_size=batch_size)
     print(evaluation)
 
+
 def evaluate_7expr_mobilenet_v1_train_affectnet_model():
     num_classes = 7
     batch_size = 64

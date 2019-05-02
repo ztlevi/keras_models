@@ -51,7 +51,9 @@ while True:
     #     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
     font = cv2.FONT_HERSHEY_SIMPLEX
-    cv2.putText(frame, "Age: {}".format(pred_age), (50, 50), font, 1, (255, 255, 255), 2, cv2.LINE_AA)
+    cv2.putText(
+        frame, "Age: {}".format(pred_age), (50, 50), font, 1, (255, 255, 255), 2, cv2.LINE_AA
+    )
 
     cv2.imshow("AGE", frame)
     # cv2.imshow("AGE", img)
