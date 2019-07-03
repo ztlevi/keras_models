@@ -8,7 +8,7 @@
 
 Training from scratch on Affectnet dataset with only the expression label.
 
-Training scripts can be found inside this repository over [here](http://rnd-github-usa-g.huawei.com/BostonResearchCenter/tflearn-models/tree/master/7expr).
+Training scripts can be found inside this repository over [here](http://rnd-github-usa-g.huawei.com/BostonResearchCenter/keras_models/blob/master/training/7expr).
 
 ## Labels
 
